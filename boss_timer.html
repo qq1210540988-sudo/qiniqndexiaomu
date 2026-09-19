@@ -1,0 +1,4092 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多频道 BOSS 计时器 - Artale</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #0a0e17;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    white-space: nowrap;
+  }
+  .header .subtitle { font-size: 10px; color: #64748b; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
+  .header-actions { display: flex; gap: 6px; flex-wrap: nowrap; flex-shrink: 0; }
+
+  .btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: #e2e8f0;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+  .btn-primary { background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; color: white; }
+  .btn-primary:hover { background: linear-gradient(135deg, #2563eb, #4f46e5); }
+  .btn-danger { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-success { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); color: #86efac; }
+  .btn-success:hover { background: rgba(34,197,94,0.25); }
+  .btn-sm { padding: 4px 9px; font-size: 11px; border-radius: 7px; }
+
+  .container { padding: 16px 24px; max-width: 1400px; margin: 0 auto; }
+
+  /* 设置栏 */
+  .settings-bar {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .settings-group { display: flex; flex-direction: column; gap: 4px; }
+  .settings-group label { font-size: 11px; color: #94a3b8; font-weight: 500; }
+  .settings-group input {
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.3);
+    color: #e2e8f0;
+    font-size: 12px;
+    outline: none;
+  }
+  .settings-group input:focus { border-color: #3b82f6; }
+  .settings-group .hint { font-size: 10px; color: #64748b; }
+  .today-tag {
+    background: rgba(59,130,246,0.2);
+    color: #93c5fd;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 600;
+  }
+
+  /* 参考点列表 */
+  .ref-points-list {
+    max-height: 140px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+  }
+  .ref-points-list::-webkit-scrollbar { width: 4px; }
+  .ref-points-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 2px; }
+  .ref-points-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+  .ref-point-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    margin-bottom: 5px;
+    font-size: 12px;
+    border-left: 3px solid rgba(148,163,184,0.3);
+    transition: background 0.2s;
+  }
+  .ref-point-item:hover { background: rgba(255,255,255,0.07); }
+  .ref-point-item.ref-open {
+    border-left-color: #4ade80;
+    background: rgba(74,222,128,0.06);
+  }
+  .ref-point-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ref-point-side {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ref-badge {
+    background: rgba(74,222,128,0.2);
+    color: #4ade80;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .ref-channel {
+    color: #93c5fd;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .ref-time {
+    color: #94a3b8;
+    font-size: 11px;
+  }
+  .ref-rate {
+    background: rgba(251,191,36,0.15);
+    color: #fbbf24;
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .ref-delete {
+    background: rgba(239,68,68,0.12);
+    color: #fca5a5;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: background 0.2s;
+    opacity: 0.6;
+  }
+  .ref-delete:hover { opacity: 1; background: rgba(239,68,68,0.25); }
+  .ref-empty {
+    font-size: 11px;
+    color: #64748b;
+    padding: 14px;
+    text-align: center;
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+  }
+
+  /* 添加参考点行 */
+  .ref-add-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+    background: rgba(15,23,42,0.4);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .ref-arrow { color: #64748b; font-size: 13px; font-weight: 700; }
+
+  /* 保存按钮 */
+  .btn-save-settings {
+    padding: 8px 20px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+    border: 1px solid rgba(59,130,246,0.4) !important;
+    box-shadow: 0 2px 10px rgba(59,130,246,0.25) !important;
+    transition: all 0.2s !important;
+  }
+  .btn-save-settings:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(59,130,246,0.35) !important;
+  }
+
+  /* 响应式 */
+  
+  /* ========== 表格样式（桌面端） ========== */
+  .boss-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .boss-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 13px;
+  }
+  .boss-table thead th {
+    background: rgba(255,255,255,0.04);
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #94a3b8;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    white-space: nowrap;
+  }
+  .boss-table tbody td {
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+    line-height: 1.5;
+  }
+  .boss-table tbody tr:hover {
+    background: rgba(255,255,255,0.02);
+  }
+  
+  /* 各列宽度 */
+  .boss-table .th-boss, .boss-table .td-boss { width: 22%; min-width: 180px; }
+  .boss-table .th-next, .boss-table .td-next { width: 22%; min-width: 160px; }
+  .boss-table .th-channels, .boss-table .td-channels { width: 24%; min-width: 180px; }
+  .boss-table .th-status, .boss-table .td-status { width: 14%; min-width: 90px; }
+  .boss-table .th-action, .boss-table .td-action { width: 18%; min-width: 110px; text-align: center; }
+  
+  /* BOSS信息 */
+  .boss-info { display: flex; align-items: center; gap: 10px; }
+  .boss-icon { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.05); }
+  .boss-name { font-size: 14px; font-weight: 600; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .boss-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+  
+  /* 时间和倒计时 */
+  .next-time-text { font-size: 13px; color: #e2e8f0; white-space: nowrap; }
+  .spawn-countdown { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .spawn-countdown.spawned { color: #4ade80; }
+  .spawn-countdown.spawning { color: #fbbf24; }
+  .spawn-countdown.soon { color: #fb923c; }
+  .spawn-countdown.waiting { color: #94a3b8; }
+  
+  /* 状态徽章 */
+  .status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .status-badge.spawned { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .status-badge.spawning { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .status-badge.soon { background: rgba(251,146,60,0.15); color: #fb923c; }
+  .status-badge.waiting { background: rgba(100,116,139,0.15); color: #94a3b8; }
+  
+  /* 刷新频道信息 */
+  .channel-info { font-size: 12px; line-height: 1.6; }
+  .channel-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .channel-label { color: #64748b; font-size: 11px; }
+  .channel-value { color: #e2e8f0; font-weight: 500; font-size: 12px; }
+  
+  /* 操作列按钮 */
+  .td-action { text-align: center; }
+  .td-action .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    margin: 2px;
+    display: inline-block;
+  }
+  .td-action .btn-hide {
+    font-size: 13px;
+    padding: 5px 8px;
+  }
+
+
+  /* ========== 手机端卡片布局 ========== */
+  .boss-cards-container {
+    display: none;
+    padding: 0 4px;
+  }
+  .boss-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .boss-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .boss-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: rgba(255,255,255,0.05);
+    flex-shrink: 0;
+  }
+  .boss-card-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .boss-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .boss-card-meta {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .boss-card-status {
+    flex-shrink: 0;
+  }
+  .boss-card-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .boss-card-item {
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+    padding: 8px;
+  }
+  .boss-card-label {
+    font-size: 10px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+  .boss-card-value {
+    font-size: 13px;
+    color: #e2e8f0;
+    font-weight: 500;
+  }
+  .boss-card-value.countdown {
+    font-size: 16px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .boss-card-value.countdown.spawned { color: #4ade80; }
+  .boss-card-value.countdown.spawning { color: #fbbf24; }
+  .boss-card-value.countdown.soon { color: #fb923c; }
+  .boss-card-value.countdown.waiting { color: #94a3b8; }
+  .boss-card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .boss-card-actions .btn {
+    flex: 1;
+    font-size: 13px;
+    padding: 10px;
+    text-align: center;
+  }
+  .boss-card-actions .btn-hide {
+    flex: 0 0 50px;
+    font-size: 16px;
+    padding: 10px;
+  }
+
+@media (max-width: 768px) {
+    /* ========== 全局 ========== */
+    body { font-size: 14px; }
+    .container { padding: 0 12px 20px 12px; max-width: 100%; width: 100%; box-sizing: border-box; }
+    
+    /* ========== 头部 ========== */
+    .header { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+    .header h1 { font-size: 16px; }
+    .header .subtitle { font-size: 10px; max-width: 200px; }
+    .header-actions { flex-wrap: wrap; gap: 5px; width: 100%; }
+    .header-actions .btn { font-size: 11px; padding: 6px 10px; }
+    
+    /* ========== 设置栏 ========== */
+    .settings-bar { padding: 12px; gap: 12px; flex-direction: column; align-items: stretch; margin: 12px 0; box-sizing: border-box; }
+    .settings-group { width: 100%; }
+    .settings-group label { font-size: 12px; margin-bottom: 4px; }
+    .settings-group input { font-size: 14px; padding: 10px; width: 100%; }
+    .settings-group select { font-size: 14px; padding: 10px; width: 100%; }
+    .settings-group .btn { font-size: 12px; padding: 10px 14px; }
+    .settings-group .hint { font-size: 11px; }
+    .today-tag { font-size: 10px; padding: 2px 6px; }
+    
+    /* 参考点 */
+    .ref-points-list { max-height: 120px; }
+    .ref-point-item { padding: 8px 10px; font-size: 12px; }
+    
+    /* ========== 隐藏表格，显示卡片 ========== */
+    .boss-table-container { display: none !important; }
+    .boss-cards-container { 
+      display: grid !important; 
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 0;
+    }
+    
+    /* ========== BOSS卡片 ========== */
+    .boss-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* 卡片头部 */
+    .boss-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .boss-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: rgba(255,255,255,0.05);
+      flex-shrink: 0;
+    }
+    .boss-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .boss-card-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #f1f5f9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .boss-card-meta {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .boss-card-status {
+      flex-shrink: 0;
+    }
+    .status-badge {
+      font-size: 9px;
+      padding: 3px 6px;
+      font-weight: 600;
+    }
+    
+    /* 卡片主体 - 垂直排列 */
+    .boss-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+      flex: 1;
+    }
+    .boss-card-item {
+      background: rgba(255,255,255,0.02);
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .boss-card-label {
+      font-size: 10px;
+      color: #64748b;
+      flex-shrink: 0;
+    }
+    .boss-card-value {
+      font-size: 11px;
+      color: #e2e8f0;
+      font-weight: 500;
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .boss-card-value.countdown {
+      font-size: 14px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .boss-card-value.countdown.spawned { color: #4ade80; }
+    .boss-card-value.countdown.spawning { color: #fbbf24; }
+    .boss-card-value.countdown.soon { color: #fb923c; }
+    .boss-card-value.countdown.waiting { color: #94a3b8; }
+    
+    /* 卡片操作按钮 */
+    .boss-card-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .boss-card-actions .btn {
+      flex: 1;
+      font-size: 12px;
+      padding: 8px;
+      text-align: center;
+      font-weight: 600;
+      border-radius: 8px;
+    }
+    .boss-card-actions .btn-success {
+      background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1));
+      border: 1px solid rgba(34,197,94,0.4);
+      color: #4ade80;
+    }
+    .boss-card-actions .btn-success:hover {
+      background: linear-gradient(135deg, rgba(34,197,94,0.3), rgba(34,197,94,0.2));
+    }
+    .boss-card-actions .btn-hide {
+      flex: 0 0 36px;
+      font-size: 14px;
+      padding: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    /* ========== 顶部击杀记录卡片 ========== */
+    .top-kill-cards {
+      gap: 8px;
+      padding: 0 0 12px 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tk-card {
+      padding: 10px 12px;
+      min-width: 160px;
+      flex-shrink: 0;
+    }
+    .tk-name { font-size: 13px; }
+    .tk-channel { font-size: 12px; }
+    .tk-countdown { font-size: 16px; font-weight: 700; }
+    .tk-next { font-size: 11px; }
+    
+    /* ========== 搜索栏 ========== */
+    .search-bar { padding: 0 0 12px 0; }
+    .search-bar .btn { font-size: 12px; padding: 8px 12px; }
+    
+    /* ========== 下拉面板 ========== */
+    .dropdown-panel {
+      width: calc(100vw - 24px);
+      max-width: 360px;
+      right: 12px;
+      left: auto;
+    }
+    .dropdown-header { font-size: 14px; padding: 12px 16px; }
+    .dropdown-panel textarea { font-size: 13px; }
+    .dropdown-panel .btn { font-size: 13px; padding: 10px 16px; }
+    
+    /* ========== 隐藏BOSS管理 ========== */
+    .hidden-manager {
+      width: calc(100vw - 24px);
+      max-width: 360px;
+      right: 12px;
+      left: auto;
+    }
+    .hidden-manager-header { font-size: 14px; padding: 12px 16px; }
+    .hidden-boss-list { padding: 10px; }
+    .hidden-boss-item { padding: 10px; font-size: 13px; }
+    
+    /* ========== 频道选择弹窗 ========== */
+    .channel-modal {
+      max-height: 90vh;
+      margin: 10px;
+      border-radius: 14px;
+    }
+    .channel-modal-header { padding: 14px 16px; }
+    .channel-modal-title { font-size: 16px; }
+    .channel-modal-hint { font-size: 12px; padding: 10px 16px; }
+    .channel-quick-input {
+      flex-wrap: wrap;
+      padding: 10px 16px;
+      gap: 8px;
+    }
+    .channel-quick-input input {
+      min-width: 120px;
+      font-size: 14px;
+      padding: 10px;
+    }
+    .channel-quick-input .btn {
+      font-size: 13px;
+      padding: 10px 16px;
+    }
+    .channel-grid {
+      grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+      gap: 8px;
+      padding: 14px 16px;
+    }
+    .channel-btn {
+      padding: 10px 4px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 8px;
+      min-height: 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-channel-num { font-size: 14px; font-weight: 700; }
+    .btn-next-time { font-size: 9px; margin-top: 2px; line-height: 1.2; }
+    .channel-modal-footer { padding: 12px 16px; }
+    .kill-result .success { font-size: 15px; }
+    .kill-result .next-spawn { font-size: 14px; }
+    
+    /* ========== 空状态 ========== */
+    .empty-state { padding: 40px 20px; }
+    .empty-state .icon { font-size: 48px; }
+    .empty-state h3 { font-size: 18px; }
+    .empty-state p { font-size: 13px; }
+    
+    /* ========== Toast ========== */
+    .toast-container {
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+    }
+    .toast { padding: 12px 16px; font-size: 13px; }
+  }
+
+  /* BOSS刷新分段 */
+  .spawn-segments {
+    margin: 4px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* BOSS卡片内的击杀记录 */
+  .boss-kills {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .boss-kill-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    font-size: 11px;
+    border-left: 2px solid rgba(148,163,184,0.3);
+  }
+  .boss-kill-item.kl-spawned { border-left-color: #4ade80; background: rgba(74,222,128,0.06); }
+  .boss-kill-item.kl-spawning { border-left-color: #fbbf24; background: rgba(251,191,36,0.06); }
+  .boss-kill-item.kl-soon { border-left-color: #fb923c; background: rgba(251,146,60,0.06); }
+  .boss-kill-item.kl-waiting { border-left-color: #64748b; }
+  .bk-channel {
+    color: #93c5fd;
+    font-weight: 600;
+    min-width: 50px;
+  }
+  .bk-map {
+    color: #c4b5fd;
+    font-weight: 600;
+    font-size: 11px;
+    padding: 1px 6px;
+    background: rgba(196,181,253,0.1);
+    border-radius: 4px;
+  }
+  .bk-next {
+    color: #94a3b8;
+    flex: 1;
+  }
+  .bk-countdown {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 60px;
+    text-align: right;
+  }
+  .bk-countdown.spawned { color: #4ade80; }
+  .bk-countdown.spawning { color: #fbbf24; }
+  .bk-countdown.soon { color: #fb923c; }
+  .bk-countdown.waiting { color: #94a3b8; }
+  .bk-delete {
+    background: none;
+    border: none;
+    color: #fca5a5;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+  .bk-delete:hover { opacity: 1; background: rgba(239,68,68,0.2); }
+  .seg {
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .seg-spawned { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .seg-spawning { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .seg-waiting { background: rgba(148,163,184,0.15); color: #94a3b8; }
+
+  /* BOSS卡片布局 */
+  .boss-card {
+    display: flex;
+    flex-direction: column;
+  }
+  .boss-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .boss-card-bottom {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* 极简刷新分段 */
+  .spawn-minimal {
+    width: 100%;
+  }
+  .spawn-minimal-text {
+    font-size: 11px;
+    line-height: 1.6;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .spawn-minimal-bar {
+    display: flex;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.05);
+    gap: 1px;
+  }
+  .boss-countdown.spawning {
+    color: #fbbf24;
+  }
+  .stat-card .value.spawning {
+    color: #fbbf24;
+  }
+  .boss-card.status-spawning {
+    border-left: 3px solid #fbbf24;
+  }
+
+/* BOSS表格 */
+  /* BOSS表格 - 参考artale.app风格 */
+  .boss-table-container {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .boss-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .boss-table thead th {
+    background: rgba(255,255,255,0.04);
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #94a3b8;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .boss-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+  }
+  .boss-table tbody tr:hover {
+    background: rgba(255,255,255,0.04);
+  }
+  .boss-table tbody tr:last-child {
+    border-bottom: none;
+  }
+  .boss-table td {
+    padding: 12px 14px;
+    vertical-align: middle;
+  }
+  .th-boss, .td-boss { min-width: 200px; }
+  .th-status, .td-status { min-width: 100px; }
+  .th-next, .td-next { min-width: 160px; }
+  .th-countdown, .td-countdown { min-width: 120px; }
+  .boss-table thead th.th-action,
+  .boss-table tbody td.td-action { min-width: 140px; text-align: center; }
+  .th-lastkill, .td-lastkill { min-width: 160px; }
+  .th-next, .td-next { min-width: 180px; }
+
+  .boss-icon-wrap {
+    flex-shrink: 0;
+  }
+  .last-kill-text {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.4;
+  }
+  .kill-count-badge {
+    display: inline-block;
+    background: rgba(59,130,246,0.15);
+    color: #93c5fd;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .btn-hide {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    color: #94a3b8;
+    margin-left: 6px;
+  }
+  .btn-hide:hover {
+    background: rgba(255,255,255,0.1);
+    color: #e2e8f0;
+  }
+
+
+  /* BOSS信息单元格 */
+  .boss-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .boss-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+  .boss-icon-fallback {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2));
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .boss-name-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .boss-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin-bottom: 2px;
+  }
+  .boss-meta {
+    font-size: 11px;
+    color: #64748b;
+  }
+  .boss-meta .level {
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-right: 6px;
+  }
+  .boss-meta .refresh {
+    color: #94a3b8;
+  }
+
+  /* 状态标签 */
+  .status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-badge.spawned {
+    background: rgba(74,222,128,0.15);
+    color: #4ade80;
+  }
+  .status-badge.spawning {
+    background: rgba(251,191,36,0.15);
+    color: #fbbf24;
+  }
+  .status-badge.soon {
+    background: rgba(251,146,60,0.15);
+    color: #fb923c;
+  }
+  .status-badge.waiting {
+    background: rgba(100,116,139,0.15);
+    color: #94a3b8;
+  }
+
+  /* 倒计时 */
+  .countdown-text {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .countdown-text.spawned { color: #4ade80; }
+  .countdown-text.spawning { color: #fbbf24; }
+  .countdown-text.soon { color: #fb923c; }
+  .countdown-text.waiting { color: #94a3b8; }
+
+  /* 下次刷新时间 */
+  .next-time-text {
+    font-size: 12px;
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 行状态边框 */
+  .boss-row.status-spawned { border-left: 3px solid #4ade80; }
+  .boss-row.status-soon { border-left: 3px solid #fb923c; }
+  .boss-row.status-spawning { border-left: 3px solid #fbbf24; }
+  .boss-row.status-waiting { border-left: 3px solid transparent; }
+
+  /* 击杀记录数标签 */
+  .kill-count-badge {
+    display: inline-block;
+    background: rgba(59,130,246,0.15);
+    color: #93c5fd;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+
+  .top-kill-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .top-kill-cards:empty { display: none; }
+  .tk-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 10px 12px;
+    min-width: 180px;
+    max-width: 220px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+  .tk-card:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); }
+  .tk-card.tk-spawned { border-left: 3px solid #4ade80; background: rgba(74,222,128,0.08); }
+  .tk-card.tk-spawning { border-left: 3px solid #fbbf24; background: rgba(251,191,36,0.08); }
+  .tk-card.tk-soon { border-left: 3px solid #fb923c; background: rgba(251,146,60,0.08); }
+  .tk-card.tk-waiting { border-left: 3px solid #64748b; }
+  .tk-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.3);
+  }
+  .tk-icon-fallback {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .tk-info { flex: 1; min-width: 0; }
+  .tk-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .tk-channel {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .tk-channel span {
+    background: rgba(59,130,246,0.2);
+    color: #93c5fd;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .tk-countdown {
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .tk-countdown.tk-spawned { color: #4ade80; }
+  .tk-countdown.tk-spawning { color: #fbbf24; }
+  .tk-countdown.tk-soon { color: #fb923c; }
+  .tk-countdown.tk-waiting { color: #94a3b8; }
+  .tk-status {
+    font-size: 10px;
+    margin-top: 2px;
+  }
+  .tk-status.tk-spawned { color: #4ade80; }
+  .tk-status.tk-spawning { color: #fbbf24; }
+  .tk-status.tk-soon { color: #fb923c; }
+  .tk-status.tk-waiting { color: #64748b; }
+  .tk-next-time {
+    font-size: 10px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+  .tk-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.4);
+    border: none;
+    color: #94a3b8;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .tk-card:hover .tk-remove { opacity: 1; }
+  .tk-remove:hover { background: rgba(239,68,68,0.4); color: #fca5a5; }
+
+
+  /* 隐藏BOSS管理 - 卡片样式 */
+  .hidden-manager {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .hidden-manager.hidden { display: none; }
+  .hidden-manager-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+  .hidden-boss-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .hidden-empty {
+    text-align: center;
+    padding: 20px;
+    color: #64748b;
+    font-size: 13px;
+    width: 100%;
+  }
+  .hidden-boss-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 12px;
+    min-width: 160px;
+    max-width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+  }
+  .hidden-boss-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .hbc-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+  .hbc-icon-fallback {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2));
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .hbc-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .hbc-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .hbc-level {
+    font-size: 10px;
+    color: #64748b;
+  }
+  .hbc-restore {
+    background: rgba(34,197,94,0.15);
+    border: 1px solid rgba(34,197,94,0.3);
+    color: #86efac;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .hbc-restore:hover {
+    background: rgba(34,197,94,0.25);
+    border-color: rgba(34,197,94,0.5);
+  }
+  .hidden-manager-footer {
+    padding: 10px 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    justify-content: flex-end;
+  }
+
+
+  /* 击杀记录侧边栏 */
+  .kill-log-panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 420px;
+    max-width: 90vw;
+    background: #0f1419;
+    border-left: 1px solid rgba(255,255,255,0.1);
+    z-index: 900;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .kill-log-panel.show { transform: translateX(0); }
+  .kill-log-panel.hidden { transform: translateX(100%); }
+  .kill-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 14px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+  .kill-log-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .kill-log-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  .kill-log-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .kill-log-boss-name { font-size: 13px; font-weight: 600; color: #f1f5f9; }
+  .kill-log-channel-badge {
+    background: rgba(59,130,246,0.2);
+    color: #93c5fd;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .kill-log-meta { display: flex; gap: 12px; color: #94a3b8; font-size: 11px; flex-wrap: wrap; }
+  .kill-log-status { text-align: right; flex-shrink: 0; }
+  .kill-log-countdown { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .kill-log-countdown.spawned { color: #4ade80; }
+  .kill-log-countdown.spawning { color: #fbbf24; }
+  .kill-log-countdown.soon { color: #fb923c; }
+  .kill-log-countdown.waiting { color: #94a3b8; }
+  .kill-log-status-text { font-size: 10px; margin-top: 2px; }
+  .kill-log-status-text.spawned { color: #4ade80; }
+  .kill-log-status-text.spawning { color: #fbbf24; }
+  .kill-log-status-text.soon { color: #fb923c; }
+  .kill-log-status-text.waiting { color: #64748b; }
+  .kill-log-empty { text-align: center; padding: 40px 20px; color: #64748b; font-size: 13px; }
+
+  #showHiddenBtn { display: none; }
+  #showHiddenBtn.visible { display: inline-block; }
+
+  /* 通用hidden类 */
+  .hidden { display: none !important; }
+
+
+  /* 参考点可折叠 */
+  .ref-points-group {
+    position: relative;
+  }
+  .ref-view-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #94a3b8;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .ref-view-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
+  }
+  .ref-arrow {
+    font-size: 10px;
+    transition: transform 0.2s;
+  }
+  .ref-points-group.expanded .ref-arrow {
+    transform: rotate(180deg);
+  }
+  .ref-points-content {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .ref-points-content.hidden {
+    display: none;
+  }
+
+
+  /* 下拉面板 */
+  .dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  .dropdown-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #1a1f2e;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px;
+    min-width: 280px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 200;
+  }
+  .dropdown-panel.hidden {
+    display: none;
+  }
+  .dropdown-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .dropdown-toggle.active {
+    background: rgba(59,130,246,0.2);
+    border-color: rgba(59,130,246,0.4);
+  }
+
+
+  /* 刷新频道列 */
+  .th-channels, .td-channels { min-width: 180px; }
+  .channel-info {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .channel-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+  .channel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .channel-dot.spawned { background: #4ade80; }
+  .channel-dot.spawning { background: #fbbf24; }
+  .channel-dot.waiting { background: #64748b; }
+  .channel-text {
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+  }
+  .channel-text.spawned { color: #4ade80; }
+  .channel-text.spawning { color: #fbbf24; }
+  .channel-text.waiting { color: #64748b; }
+  .channel-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+    display: flex;
+  }
+  .channel-bar-segment {
+    height: 100%;
+  }
+  .channel-bar-segment.spawned { background: #4ade80; }
+  .channel-bar-segment.spawning { background: #fbbf24; }
+  .channel-bar-segment.waiting { background: #64748b; }
+
+
+  /* 频道选择模态框 */
+  .channel-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .channel-modal-overlay.show {
+    display: flex;
+  }
+  .channel-modal {
+    background: #1e293b;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 800px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .channel-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px 12px 0 0;
+  }
+  .channel-modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+  .channel-modal-hint {
+    padding: 10px 20px;
+    font-size: 12px;
+    color: #94a3b8;
+    background: rgba(59,130,246,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .channel-quick-input {
+    display: flex;
+    gap: 8px;
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    align-items: center;
+  }
+  .channel-grid {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 8px;
+    align-content: start;
+    scroll-behavior: smooth;
+  }
+  .channel-btn.highlight {
+    box-shadow: 0 0 0 2px #fbbf24, 0 0 12px rgba(251,191,36,0.5);
+    animation: pulse-highlight 1s ease-in-out 2;
+  }
+  @keyframes pulse-highlight {
+    0%, 100% { box-shadow: 0 0 0 2px #fbbf24, 0 0 12px rgba(251,191,36,0.5); }
+    50% { box-shadow: 0 0 0 3px #fbbf24, 0 0 20px rgba(251,191,36,0.8); }
+  }
+  .channel-btn {
+    padding: 10px 4px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+    user-select: none;
+  }
+  .channel-btn:hover {
+    background: rgba(59,130,246,0.2);
+    border-color: rgba(59,130,246,0.4);
+  }
+  .channel-btn.selected {
+    background: rgba(100,116,139,0.4);
+    border-color: rgba(100,116,139,0.6);
+    color: #94a3b8;
+  }
+  .channel-btn.killed {
+    background: linear-gradient(135deg, rgba(74,222,128,0.3), rgba(34,197,94,0.2));
+    border: 2px solid #4ade80;
+    color: #4ade80;
+    font-weight: 600;
+    padding: 6px 2px;
+    line-height: 1.2;
+  }
+  .channel-btn.chase-next {
+    background: linear-gradient(135deg, rgba(251,191,36,0.3), rgba(245,158,11,0.2));
+    border: 2px solid #fbbf24;
+    color: #fbbf24;
+    font-weight: 600;
+    padding: 6px 2px;
+    line-height: 1.2;
+    animation: chasePulse 1.5s infinite;
+  }
+  @keyframes chasePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(251,191,36,0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(251,191,36,0); }
+  }
+  #chaseModeBtn.active {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-color: #f59e0b;
+    color: white;
+  }
+  .channel-btn.killed:hover {
+    background: linear-gradient(135deg, rgba(74,222,128,0.4), rgba(34,197,94,0.3));
+    border-color: #86efac;
+  }
+  .btn-channel-num {
+    font-size: 14px;
+    font-weight: 700;
+    color: #4ade80;
+  }
+  .btn-next-time {
+    font-size: 9px;
+    color: #86efac;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .channel-modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.02);
+    border-radius: 0 0 12px 12px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .kill-result {
+    text-align: center;
+    font-size: 14px;
+  }
+  .kill-result .success {
+    color: #4ade80;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .kill-result .next-spawn {
+    color: #93c5fd;
+    font-size: 13px;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>⚔️ BOSS 计时器</h1>
+    <div class="subtitle">多频道独立计时 · 击杀重置 · 刷新提醒 · 数据来源 artale.app</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="exportConfig()">📋 复制</button>
+    <div class="dropdown-wrapper">
+      <button class="btn dropdown-toggle" onclick="toggleDropdown('importDropdown')">📥 导入</button>
+      <div id="importDropdown" class="dropdown-panel hidden">
+        <div class="dropdown-header">📥 导入配置</div>
+        <textarea id="importText" rows="5" style="width:100%;font-family:monospace;font-size:11px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:8px;color:#e2e8f0;resize:vertical;min-height:80px" placeholder="在此粘贴配置JSON..."></textarea>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-primary btn-sm" onclick="confirmImport()">✅ 导入</button>
+          <button class="btn btn-sm" onclick="closeDropdown('importDropdown')">取消</button>
+        </div>
+      </div>
+    </div>
+    <div class="dropdown-wrapper">
+      <button class="btn dropdown-toggle" onclick="toggleDropdown('statsDropdown')">📊 统计</button>
+      <div id="statsDropdown" class="dropdown-panel hidden" style="width:420px">
+        <div class="dropdown-header">📊 击杀统计</div>
+        <div id="statsContent" style="max-height:400px;overflow-y:auto"></div>
+      </div>
+    </div>
+    <button class="btn btn-danger" onclick="clearAllData()">🗑️ 清空</button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- 设置栏 - 可折叠 -->
+  <!-- 设置栏 -->
+  <div class="settings-bar">
+    <div class="settings-group">
+      <label>🕐 服务器开服时间 <span class="today-tag" id="openDateTag">今天</span></label>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <select id="openDateSelect" style="width:80px;padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:#e2e8f0;font-size:12px">
+          <option value="0">今天</option>
+          <option value="-1">昨天</option>
+          <option value="-2">前天</option>
+        </select>
+        <input type="time" id="serverOpenTime" value="" style="width:120px">
+        <button class="btn btn-sm" onclick="setNowTime('serverOpenTime')" title="设为当前时间">现在</button>
+      </div>
+      <div class="hint">频道1的开服时刻（自动作为第1个参考点）</div>
+    </div>
+    <div class="settings-group ref-points-group" style="flex:2;min-width:280px">
+      <label>📊 参考点</label>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input type="time" id="newRefTime" value="" style="width:100px">
+        <span style="color:#64748b;font-size:12px">开到</span>
+        <input type="number" id="newRefChannel" placeholder="649" value="" min="2" style="width:90px">
+        <span style="color:#64748b;font-size:12px">频道</span>
+        <button class="btn btn-sm btn-primary" onclick="addReferencePoint()">➕</button>
+        <button class="btn btn-sm" onclick="setNowTime('newRefTime')" title="设为当前时间">现在</button>
+        <button class="btn btn-sm ref-view-btn" onclick="toggleRefPoints()" title="查看参考点">
+          📈 <span id="refCount">0</span> <span class="ref-arrow">▼</span>
+        </button>
+      </div>
+      <div id="refPointsContent" class="ref-points-content hidden">
+        <div id="referencePointsList" class="ref-points-list" style="margin-top:8px"></div>
+        <div class="hint">可添加多个参考点，系统按分段计算每个频道的实际开服时间</div>
+      </div>
+    </div>
+    <div class="settings-group">
+      <label>📺 当前已开频道数</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="number" id="maxChannel" placeholder="840" value="" min="1" style="width:100px" oninput="onMaxChannelChange(this.value)">
+        <button class="btn btn-sm" onclick="adjustChannel(100)">+100</button>
+        <button class="btn btn-sm" onclick="adjustChannel(10)">+10</button>
+      </div>
+      <div class="hint">目前游戏已开到的最大频道号</div>
+    </div>
+    <div class="settings-group">
+      <label>🔄 自动重置百分比</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="number" id="autoResetPercent" placeholder="20" value="20" min="0" max="200" style="width:80px">
+        <span style="color:#64748b;font-size:12px">%</span>
+      </div>
+      <div class="hint">刷新完后过刷新时间的百分之多少自动重置</div>
+    </div>
+    <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+  </div>
+
+  <!-- 搜索栏 -->
+  <!-- 顶部击杀记录卡片 -->
+<div id="topKillCards" class="top-kill-cards"></div>
+
+<div class="search-bar">
+    <button class="btn btn-sm" id="showHiddenBtn" onclick="openHiddenManager()" title="管理隐藏的BOSS">👁️ 隐藏 (<span id="hiddenCount">0</span>)</button>
+  </div>
+
+  <!-- 隐藏BOSS管理面板 -->
+  <div id="hiddenManager" class="hidden-manager hidden">
+    <div class="hidden-manager-header">
+      <span>👁️ 已隐藏的BOSS</span>
+      <button class="btn btn-sm" onclick="closeHiddenManager()">✕</button>
+    </div>
+    <div id="hiddenBossList" class="hidden-boss-list"></div>
+    <div class="hidden-manager-footer">
+      <button class="btn btn-sm btn-success" onclick="showAllHiddenBosses()">全部恢复</button>
+    </div>
+  </div>
+
+  <!-- 击杀记录面板 -->
+  <div id="killLogPanel" class="kill-log-panel hidden">
+    <div class="kill-log-header">
+      <span>⚔️ 击杀记录（按刷新时间排序，最快刷新排最前）</span>
+      <button class="btn btn-sm" onclick="clearKillLog()" style="background:rgba(239,68,68,0.2);color:#fca5a5">清空记录</button>
+    </div>
+    <div class="kill-log-list" id="killLogList"></div>
+  </div>
+
+  <!-- BOSS 网格 -->
+  <div class="boss-table-container">
+    <table class="boss-table">
+      <thead>
+        <tr>
+          <th class="th-boss">BOSS</th>
+          <th class="th-next">下次刷新</th>
+          <th class="th-channels">刷新频道</th>
+          <th class="th-status">状态</th>
+          <th class="th-action">操作</th>
+        </tr>
+      </thead>
+      <tbody id="bossTableBody">
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 手机端卡片布局容器 -->
+  <div class="boss-cards-container" id="bossCardsContainer"></div>
+
+  <!-- 空状态 -->
+  <div id="emptyState" class="empty-state hidden">
+    <div class="icon">🎮</div>
+    <h3>请先设置开服信息</h3>
+    <p>在上方填写服务器开服时间和已开频道数，即可开始追踪 BOSS 刷新</p>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============================================================
+// BOSS 数据（从 artale.app 爬取，35个）
+// ============================================================
+const BOSS_DATA = [
+  {"name":"紅寶王","level":20,"minRebirth":23,"maxRebirth":30,"iconUrl":"https://artale.app/image/item/2220000.png"},
+  {"name":"樹妖王","level":35,"minRebirth":23,"maxRebirth":30,"iconUrl":"https://artale.app/image/item/3220000.png"},
+  {"name":"仙人長老","level":38,"minRebirth":68,"maxRebirth":90,"iconUrl":"https://artale.app/image/item/3220001.png"},
+  {"name":"殭屍猴王","level":50,"minRebirth":38,"maxRebirth":45,"iconUrl":"https://artale.app/image/item/5220002.png"},
+  {"name":"巨居蟹","level":55,"minRebirth":45,"maxRebirth":60,"iconUrl":"https://artale.app/image/item/5220000.png"},
+  {"name":"冥界幽靈","level":56,"minRebirth":45,"maxRebirth":60,"iconUrl":"https://artale.app/image/item/5090000.png"},
+  {"name":"咕咕鐘","level":59,"minRebirth":68,"maxRebirth":90,"iconUrl":"https://artale.app/image/item/5220003.png"},
+  {"name":"仙人娃娃","level":59,"minRebirth":158,"maxRebirth":180,"iconUrl":"https://artale.app/image/item/999999999.png"},
+  {"name":"喵怪仙人","level":59,"minRebirth":150,"maxRebirth":170,"iconUrl":"https://artale.app/image/item/5090001.png"},
+  {"name":"蘑菇王","level":60,"minRebirth":210,"maxRebirth":240,"iconUrl":"https://artale.app/image/item/6130101.png"},
+  {"name":"書生幽靈","level":62,"minRebirth":150,"maxRebirth":300,"iconUrl":"https://artale.app/image/item/6090003.png"},
+  {"name":"巨大深山人蔘","level":62,"minRebirth":60,"maxRebirth":135,"iconUrl":"https://artale.app/image/item/2000026.png"},
+  {"name":"紅藍雙怪","level":63,"minRebirth":113,"maxRebirth":135,"iconUrl":"https://artale.app/image/item/6090004.png"},
+  {"name":"雪山魔女","level":64,"minRebirth":158,"maxRebirth":180,"iconUrl":"https://artale.app/image/item/6090001.png"},
+  {"name":"沼澤巨鱷","level":65,"minRebirth":90,"maxRebirth":105,"iconUrl":"https://artale.app/image/item/6220000.png"},
+  {"name":"殭屍蘑菇王","level":65,"minRebirth":195,"maxRebirth":225,"iconUrl":"https://artale.app/image/item/6300005.png"},
+  {"name":"厄運死神","level":65,"minRebirth":45,"maxRebirth":105,"iconUrl":"https://artale.app/image/item/6090000.png"},
+  {"name":"葛雷金剛","level":65,"minRebirth":270,"maxRebirth":350,"iconUrl":"https://artale.app/image/item/6220001.png"},
+  {"name":"竹刀武士","level":68,"minRebirth":113,"maxRebirth":128,"iconUrl":"https://artale.app/image/item/6090002.png"},
+  {"name":"九尾妖狐","level":70,"minRebirth":210,"maxRebirth":570,"iconUrl":"https://artale.app/image/item/7220001.png"},
+  {"name":"肯德熊","level":71,"minRebirth":113,"maxRebirth":128,"iconUrl":"https://artale.app/image/item/7220000.png"},
+  {"name":"自動警備系統","level":75,"minRebirth":158,"maxRebirth":173,"iconUrl":"https://artale.app/image/item/7090000.png"},
+  {"name":"巴洛古","level":100,"minRebirth":405,"maxRebirth":540,"iconUrl":"https://artale.app/image/item/6400006.png"},
+  {"name":"迪特和洛依","level":80,"minRebirth":150,"maxRebirth":165,"iconUrl":"https://artale.app/image/item/8090000.png"},
+  {"name":"艾利傑","level":83,"minRebirth":118,"maxRebirth":128,"iconUrl":"https://artale.app/image/item/8220000.png"},
+  {"name":"奇美拉","level":85,"minRebirth":120,"maxRebirth":135,"iconUrl":"https://artale.app/image/item/8220002.png"},
+  {"name":"黑輪王","level":85,"minRebirth":780,"maxRebirth":1020,"iconUrl":"https://artale.app/image/item/9300207.png","maps":["7-1","7"]},
+  {"name":"雪毛怪人","level":90,"minRebirth":45,"maxRebirth":68,"iconUrl":"https://artale.app/image/item/8220001.png"},
+  {"name":"藍色蘑菇王","level":90,"minRebirth":720,"maxRebirth":1880,"iconUrl":"https://artale.app/image/item/8220007.png"},
+  {"name":"瘋狂喵z客","level":100,"minRebirth":120,"maxRebirth":420,"iconUrl":"https://artale.app/image/item/9410035.png"},
+  {"name":"噴火龍","level":105,"minRebirth":20,"maxRebirth":60,"iconUrl":"https://artale.app/image/item/8180000.png"},
+  {"name":"格瑞芬多","level":105,"minRebirth":20,"maxRebirth":60,"iconUrl":"https://artale.app/image/item/8180001.png"},
+  {"name":"海怒斯","level":110,"minRebirth":180,"maxRebirth":300,"iconUrl":"https://artale.app/image/item/8510000.png"},
+  {"name":"寒霜冰龍","level":120,"minRebirth":240,"maxRebirth":720,"iconUrl":"https://artale.app/image/item/8220003.png"},
+  {"name":"多多","level":121,"minRebirth":45,"maxRebirth":315,"iconUrl":"https://artale.app/image/item/8220004.png"},
+  {"name":"利里諾斯","level":131,"minRebirth":45,"maxRebirth":315,"iconUrl":"https://artale.app/image/item/8220005.png"},
+  {"name":"萊伊卡","level":141,"minRebirth":45,"maxRebirth":315,"iconUrl":"https://artale.app/image/item/8220006.png"},
+];
+
+// ============================================================
+// 状态管理
+// ============================================================
+const STORAGE_KEY = 'boss_timer_v2';
+
+let state = {
+  serverOpenTime: null,
+  referencePoints: [], // [{time: "YYYY-MM-DD HH:MM:SS", channel: N}, ...]
+  maxChannel: null,
+  kills: {},        // { "频道号_BOSS名": "ISO时间" }
+  bossOverrides: {}, // { "BOSS名": {minRebirth, maxRebirth} }
+  notified: {},      // { "频道号_BOSS名": true }
+  autoResetPercent: 20, // 刷新完后过百分之多少自动重置（默认20%）
+  hiddenBosses: [],   // 隐藏的BOSS名称列表
+  settingsCollapsed: false // 设置栏是否收起
+};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const loaded = JSON.parse(raw);
+      state = { ...state, ...loaded };
+      // 兼容旧数据：如果没有 maxChannel，但有 referenceChannel，就用 referenceChannel
+      if (!state.maxChannel && state.referenceChannel) {
+        state.maxChannel = state.referenceChannel;
+      }
+      if (!state.kills) state.kills = {};
+      if (!state.bossOverrides) state.bossOverrides = {};
+      if (!state.notified) state.notified = {};
+      if (!state.referencePoints) state.referencePoints = [];
+      if (!state.autoResetPercent) state.autoResetPercent = 20;
+      if (!state.hiddenBosses) state.hiddenBosses = [];
+      if (state.settingsCollapsed === undefined) state.settingsCollapsed = false;
+      // 兼容旧数据：单个 referenceTime/referenceChannel 转为数组
+      if (state.referenceTime && state.referenceChannel && state.referencePoints.length === 0) {
+        state.referencePoints = [{time: state.referenceTime, channel: state.referenceChannel}];
+      }
+      delete state.referenceTime;
+      delete state.referenceChannel;
+    }
+  } catch(e) { console.error('加载失败', e); }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) { console.error('保存失败', e); }
+}
+
+// ============================================================
+// 频道开服时间计算
+// ============================================================
+// 获取排序后的参考点列表（开服时间作为第1个点：频道1）
+function getSortedReferencePoints() {
+  if (!state.serverOpenTime) return [];
+  const openTime = new Date(state.serverOpenTime.replace(/-/g, '/'));
+  let points = [{ time: openTime, channel: 1, isOpen: true }];
+
+  if (state.referencePoints && state.referencePoints.length > 0) {
+    for (const p of state.referencePoints) {
+      if (p.time && p.channel > 1) {
+        points.push({ time: new Date(p.time.replace(/-/g, '/')), channel: p.channel, isOpen: false });
+      }
+    }
+  }
+
+  // 按频道号排序
+  points.sort((a, b) => a.channel - b.channel);
+  // 去重（相同频道号保留时间较早的）
+  const deduped = [];
+  for (const p of points) {
+    if (deduped.length === 0 || deduped[deduped.length-1].channel !== p.channel) {
+      deduped.push(p);
+    }
+  }
+  return deduped;
+}
+
+function getChannelOpenTime(channelNum) {
+  // 根据多个参考点分段计算每个频道的实际开服时间
+  if (!state.serverOpenTime) return null;
+  if (state.maxChannel && channelNum > state.maxChannel) return null;
+
+  const points = getSortedReferencePoints();
+  if (points.length < 2) {
+    return points.length > 0 ? points[0].time : null;
+  }
+
+  // 找到频道所在的分段
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    if (channelNum >= p1.channel && channelNum <= p2.channel) {
+      if (p2.channel === p1.channel) return p1.time;
+      const ratio = (channelNum - p1.channel) / (p2.channel - p1.channel);
+      const timeMs = p1.time.getTime() + ratio * (p2.time.getTime() - p1.time.getTime());
+      return new Date(timeMs);
+    }
+  }
+
+  // 频道小于第一个参考点
+  if (channelNum < points[0].channel) return points[0].time;
+
+  // 频道大于最后一个参考点，用最后一段速率外推
+  const last1 = points[points.length - 2];
+  const last2 = points[points.length - 1];
+  if (last2.channel === last1.channel) return last2.time;
+  const msPerChannel = (last2.time.getTime() - last1.time.getTime()) / (last2.channel - last1.channel);
+  return new Date(last2.time.getTime() + (channelNum - last2.channel) * msPerChannel);
+}
+
+function getChannelRateInfo() {
+  // 返回各分段速率信息，用于显示
+  const points = getSortedReferencePoints();
+  if (points.length < 2) return null;
+  const segments = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const hours = (p2.time.getTime() - p1.time.getTime()) / 3600000;
+    const channels = p2.channel - p1.channel;
+    const rate = hours > 0 ? channels / hours : 0;
+    segments.push({ from: p1.channel, to: p2.channel, rate: rate })
+
+// ============================================================
+// 刷新概率计算 & 竞争频道提示
+// ============================================================
+function getBossSpawnProbability(bossName) {
+  // 计算某个BOSS在当前时间点的刷新分布
+  const bossDef = getBossDef(bossName);
+  if (!bossDef || !state.maxChannel) return null;
+  
+  const now = new Date();
+  const minMs = bossDef.minRebirth * 60000;
+  const maxMs = bossDef.maxRebirth * 60000;
+  
+  let spawnedChannel = 0;      // 已经完全刷新（超过maxRebirth）
+  let spawningStart = 0;       // 正在刷新区间开始
+  let spawningEnd = 0;         // 正在刷新区间结束
+  let notSpawnedChannel = 0;   // 还没刷新（不到minRebirth）
+  
+  // 二分查找边界，提高效率
+  // 1. 找到已经完全刷新的最大频道（开服时间 + maxMs <= now）
+  let low = 1, high = state.maxChannel;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const openTime = getChannelOpenTime(mid);
+    if (openTime && openTime.getTime() + maxMs <= now.getTime()) {
+      spawnedChannel = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  
+  // 2. 找到开始刷新的频道（开服时间 + minMs <= now）
+  low = spawnedChannel + 1; high = state.maxChannel;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const openTime = getChannelOpenTime(mid);
+    if (openTime && openTime.getTime() + minMs <= now.getTime()) {
+      spawningEnd = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  spawningStart = spawnedChannel + 1;
+  notSpawnedChannel = state.maxChannel - spawningEnd;
+  
+  // 计算刷新概率最高的点（正在刷新区间的中间位置概率最高）
+  let bestChannel = 0;
+  let bestProbability = 0;
+  if (spawningEnd > spawningStart) {
+    bestChannel = Math.floor((spawningStart + spawningEnd) / 2);
+    // 概率计算：越接近minRebirth，刷新概率增长越快
+    const bestOpenTime = getChannelOpenTime(bestChannel);
+    if (bestOpenTime) {
+      const elapsed = now.getTime() - (bestOpenTime.getTime() + minMs);
+      const range = maxMs - minMs;
+      bestProbability = range > 0 ? Math.min(0.95, 0.3 + (elapsed / range) * 0.65) : 0.5;
+    }
+  }
+  
+  return {
+    spawnedChannel: spawnedChannel,
+    spawningStart: spawningStart,
+    spawningEnd: spawningEnd,
+    notSpawnedChannel: notSpawnedChannel,
+    bestChannel: bestChannel,
+    bestProbability: bestProbability,
+    totalChannels: state.maxChannel,
+    spawnedPercent: (spawnedChannel / state.maxChannel * 100).toFixed(1),
+    spawningPercent: ((spawningEnd - spawningStart + 1) / state.maxChannel * 100).toFixed(1),
+    notSpawnedPercent: (notSpawnedChannel / state.maxChannel * 100).toFixed(1)
+  };
+}
+
+function getSpawnProbabilityBarHtml(prob) {
+  // 生成刷新概率进度条HTML
+  if (!prob) return '';
+  
+  const spawnedW = prob.spawnedPercent;
+  const spawningW = prob.spawningPercent;
+  const notSpawnedW = prob.notSpawnedPercent;
+  
+  let html = '<div style="margin-top:8px">';
+  html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;margin-bottom:4px">';
+  html += '<span>📊 刷新分布</span>';
+  if (prob.bestChannel > 0) {
+    html += '<span style="color:#fbbf24">🎯 推荐: ' + prob.bestChannel + '频 (' + (prob.bestProbability * 100).toFixed(0) + '%)</span>';
+  }
+  html += '</div>';
+  
+  // 进度条
+  html += '<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,0.05)">';
+  html += '<div style="width:' + spawnedW + '%;background:linear-gradient(90deg,#22c55e,#4ade80)" title="已刷新: 1~' + prob.spawnedChannel + '频"></div>';
+  html += '<div style="width:' + spawningW + '%;background:linear-gradient(90deg,#f59e0b,#fbbf24)" title="刷新中: ' + prob.spawningStart + '~' + prob.spawningEnd + '频"></div>';
+  html += '<div style="width:' + notSpawnedW + '%;background:rgba(100,116,139,0.3)" title="未刷新: ' + (prob.spawningEnd + 1) + '~' + prob.totalChannels + '频"></div>';
+  html += '</div>';
+  
+  // 图例
+  html += '<div style="display:flex;justify-content:space-between;font-size:9px;margin-top:3px">';
+  html += '<span style="color:#4ade80">✓ 已刷 ' + prob.spawnedChannel + '</span>';
+  html += '<span style="color:#fbbf24">⚡ 刷中 ' + (prob.spawningEnd - prob.spawningStart + 1) + '</span>';
+  html += '<span style="color:#64748b">⏳ 未刷 ' + prob.notSpawnedChannel + '</span>';
+  html += '</div>';
+  html += '</div>';
+  
+  return html;
+}
+  }
+  return segments;
+}
+
+function isSettingsValid() {
+  return state.serverOpenTime !== null && state.maxChannel !== null;
+}
+
+// ============================================================
+// BOSS 定义
+// ============================================================
+function getBossDef(name) {
+  const base = BOSS_DATA.find(b => b.name === name);
+  if (!base) return null;
+  const override = state.bossOverrides[name];
+  if (override) {
+    return { ...base, minRebirth: override.minRebirth, maxRebirth: override.maxRebirth };
+  }
+  return base;
+}
+
+// 获取BOSS的刷新时间范围（基于频道1开服时间，用于没有击杀记录的情况）
+function getBossSpawnInfo(bossName) {
+  const bossDef = getBossDef(bossName);
+  if (!bossDef || !state.serverOpenTime) return null;
+  const openTime = new Date(state.serverOpenTime.replace(/-/g, '/'));
+  const now = Date.now();
+  const minMs = bossDef.minRebirth * 60000;
+  const maxMs = bossDef.maxRebirth * 60000;
+  // 计算当前轮次
+  const elapsed = now - openTime.getTime();
+  if (elapsed < 0) return { min: new Date(openTime.getTime() + minMs), max: new Date(openTime.getTime() + maxMs) };
+  const cycleMin = minMs * 1.2; // 用最小刷新时间的1.2倍作为周期
+  const cycles = Math.floor(elapsed / cycleMin);
+  const cycleStart = openTime.getTime() + cycles * cycleMin;
+  return { min: new Date(cycleStart + minMs), max: new Date(cycleStart + maxMs) };
+}
+
+// ============================================================
+// BOSS 刷新时间计算
+// ============================================================
+function getBossNextSpawn(channelNum, bossName) {
+  const bossDef = getBossDef(bossName);
+  if (!bossDef) return null;
+
+  const percent = state.autoResetPercent || 20;
+  const killKey = `${channelNum}_${bossName}`;
+  const killTime = state.kills[killKey];
+
+  let baseTime;
+  let killed = false;
+  let actualKillTime = null;
+
+  if (killTime) {
+    baseTime = new Date(killTime).getTime();
+    killed = true;
+    actualKillTime = new Date(killTime);
+  } else {
+    const openTime = getChannelOpenTime(channelNum);
+    if (!openTime) return null;
+    baseTime = openTime.getTime();
+  }
+
+  // 计算当前轮次的刷新时间（周期性循环）
+  const cycle = getCurrentSpawnCycle(baseTime, bossDef, percent);
+
+  return {
+    min: cycle.min,
+    max: cycle.max,
+    killed: killed,
+    killTime: actualKillTime,
+    cycle: cycle.cycle,
+    cycleStart: cycle.cycleStart
+  };
+}
+
+// 计算当前轮次的刷新时间（周期性循环：每过 max+percent 自动进入下一轮）
+function getCurrentSpawnCycle(baseTime, bossDef, percent) {
+  const now = Date.now();
+  const cycleMs = bossDef.maxRebirth * 60000 * (1 + percent / 100);
+  const elapsed = now - baseTime;
+  if (elapsed < 0) {
+    return {
+      min: new Date(baseTime + bossDef.minRebirth * 60000),
+      max: new Date(baseTime + bossDef.maxRebirth * 60000),
+      cycleStart: new Date(baseTime),
+      cycle: 0
+    };
+  }
+  const cycle = Math.floor(elapsed / cycleMs);
+  const cycleStart = baseTime + cycle * cycleMs;
+  return {
+    min: new Date(cycleStart + bossDef.minRebirth * 60000),
+    max: new Date(cycleStart + bossDef.maxRebirth * 60000),
+    cycleStart: new Date(cycleStart),
+    cycle: cycle
+  };
+}
+
+// 计算BOSS在所有频道上的刷新分段
+function getBossSpawnSegments(bossName) {
+  const bossDef = getBossDef(bossName);
+  if (!bossDef || !state.maxChannel || state.maxChannel < 1) return [];
+
+  const now = Date.now();
+  const percent = state.autoResetPercent || 20;
+  const segments = [];
+  let currentStatus = null;
+  let segmentStart = 1;
+
+  for (let ch = 1; ch <= state.maxChannel; ch++) {
+    const openTime = getChannelOpenTime(ch);
+    if (!openTime) continue;
+
+    // 检查该频道是否有击杀记录
+    const killKey = `${ch}_${bossName}`;
+    let baseTime;
+    if (state.kills[killKey]) {
+      // 有击杀记录，从击杀时间算（击杀记录会被autoResetExpiredKills自动清理）
+      baseTime = new Date(state.kills[killKey]).getTime();
+    } else {
+      // 没有击杀记录，从频道开服时间算
+      baseTime = openTime.getTime();
+    }
+
+    // 计算当前轮次的刷新时间（周期性循环）
+    const cycle = getCurrentSpawnCycle(baseTime, bossDef, percent);
+    const minSpawn = cycle.min.getTime();
+    const maxSpawn = cycle.max.getTime();
+
+    let status;
+    if (now >= maxSpawn) status = 'spawned';
+    else if (now >= minSpawn) status = 'spawning';
+    else status = 'waiting';
+
+    if (status !== currentStatus) {
+      if (currentStatus !== null) {
+        segments.push({ status: currentStatus, start: segmentStart, end: ch - 1 });
+      }
+      currentStatus = status;
+      segmentStart = ch;
+    }
+  }
+
+  if (currentStatus !== null) {
+    segments.push({ status: currentStatus, start: segmentStart, end: state.maxChannel });
+  }
+
+  return segments;
+}
+
+// 生成刷新分段的HTML（极简样式：一行文字+细进度条）
+function renderSpawnSegments(segments) {
+  if (!segments || segments.length === 0) return '';
+  const totalChannels = segments[segments.length - 1].end;
+  const labels = { spawned: '已刷新', spawning: '刷新中', waiting: '等待中' };
+  const colors = { spawned: '#4ade80', spawning: '#fbbf24', waiting: '#94a3b8' };
+
+  // 一行文字说明
+  const textHtml = segments.map(seg => {
+    const range = seg.start === seg.end ? `${seg.start}` : `${seg.start}~${seg.end}`;
+    return `<span style="color:${colors[seg.status]}">${labels[seg.status]} ${range}频</span>`;
+  }).join(' <span style="color:#475569">|</span> ');
+
+  // 细进度条
+  const barHtml = segments.map((seg, idx) => {
+    const count = seg.end - seg.start + 1;
+    const percent = Math.max(1, (count / totalChannels * 100));
+    const isFirst = idx === 0;
+    const isLast = idx === segments.length - 1;
+    const radius = isFirst ? '2px 0 0 2px' : (isLast ? '0 2px 2px 0' : '0');
+    return `<div style="width:${percent.toFixed(1)}%;height:100%;background:${colors[seg.status]};border-radius:${radius};transition:width 0.5s ease"></div>`;
+  }).join('');
+
+  return `<div class="spawn-minimal">
+    <div class="spawn-minimal-text">${textHtml}</div>
+    <div class="spawn-minimal-bar">${barHtml}</div>
+  </div>`;
+}
+
+// ============================================================
+// 格式化
+// ============================================================
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function formatCountdown(ms) {
+  if (ms <= 0) return '已刷新';
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+function formatTime(dt) {
+  return `${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+}
+
+function formatTimeFull(dt) {
+  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
+}
+
+// ============================================================
+// 渲染
+// ============================================================
+// 时间格式转换
+// 存储格式 "YYYY-MM-DD HH:MM:SS" ↔ time输入框 "HH:MM"（日期默认今天）
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function getDateStrByOffset(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function timeToStorage(timeStr, dateOffset) {
+  if (!timeStr) return '';
+  const offset = (dateOffset !== undefined) ? dateOffset : (state.openDateOffset || 0);
+  return `${getDateStrByOffset(offset)} ${timeStr}:00`;
+}
+function storageToTime(str) {
+  if (!str) return '';
+  const parts = str.split(' ');
+  return parts[1] ? parts[1].slice(0, 5) : '';
+}
+
+function getDateOffsetFromStorage(str) {
+  if (!str) return 0;
+  const parts = str.split(' ');
+  if (!parts[0]) return 0;
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+  if (parts[0] === todayStr) return 0;
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = `${yesterday.getFullYear()}-${pad(yesterday.getMonth()+1)}-${pad(yesterday.getDate())}`;
+  if (parts[0] === yesterdayStr) return -1;
+  const dayBefore = new Date();
+  dayBefore.setDate(dayBefore.getDate() - 2);
+  const dayBeforeStr = `${dayBefore.getFullYear()}-${pad(dayBefore.getMonth()+1)}-${pad(dayBefore.getDate())}`;
+  if (parts[0] === dayBeforeStr) return -2;
+  return 0;
+}
+function setNowTime(inputId) {
+  const now = new Date();
+  document.getElementById(inputId).value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+function onMaxChannelChange(value) {
+  const val = parseInt(value);
+  if (val && val > 0) {
+    state.maxChannel = val;
+    saveState();
+    renderBosses();
+  }
+}
+
+function adjustChannel(delta) {
+  const inp = document.getElementById('maxChannel');
+  const cur = parseInt(inp.value) || 0;
+  const newVal = Math.max(1, cur + delta);
+  inp.value = newVal;
+  state.maxChannel = newVal;
+  saveState();
+  renderBosses();
+}
+
+// 刷新时间格式转换：分钟 ↔ "H:MM"
+function minutesToHM(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${h}:${pad(m)}`;
+}
+function hmToMinutes(str) {
+  if (!str) return 60;
+  const parts = str.split(':');
+  if (parts.length === 2) {
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  }
+  return parseInt(str) || 60;
+}
+function minutesToText(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m}分钟`;
+  if (m === 0) return `${h}小时`;
+  return `${h}小时${m}分`;
+}
+
+function renderSettings() {
+  document.getElementById('serverOpenTime').value = storageToTime(state.serverOpenTime);
+  document.getElementById('maxChannel').value = state.maxChannel || '';
+  document.getElementById('autoResetPercent').value = state.autoResetPercent || 20;
+  document.getElementById('newRefTime').value = '';
+  document.getElementById('newRefChannel').value = '';
+  renderReferencePointsList();
+
+  // 设置日期选择和标签
+  const dateOffset = getDateOffsetFromStorage(state.serverOpenTime);
+  state.openDateOffset = dateOffset;
+  const dateSelect = document.getElementById('openDateSelect');
+  if (dateSelect) dateSelect.value = dateOffset.toString();
+  updateOpenDateTag();
+}
+
+function updateOpenDateTag() {
+  const offset = state.openDateOffset || 0;
+  const dateStr = getDateStrByOffset(offset);
+  const tagEl = document.getElementById('openDateTag');
+  if (tagEl) {
+    if (offset === 0) tagEl.textContent = '今天 ' + dateStr;
+    else if (offset === -1) tagEl.textContent = '昨天 ' + dateStr;
+    else if (offset === -2) tagEl.textContent = '前天 ' + dateStr;
+    else tagEl.textContent = dateStr;
+  }
+}
+  updateRefCount();
+
+
+function renderReferencePointsList() {
+  const listEl = document.getElementById('referencePointsList');
+  const allPoints = getSortedReferencePoints();
+
+  if (allPoints.length < 2) {
+    listEl.innerHTML = '<div class="ref-empty">添加参考点后，系统将按分段计算每个频道的实际开服时间</div>';
+    return;
+  }
+
+  let html = '';
+  for (let i = 0; i < allPoints.length; i++) {
+    const p = allPoints[i];
+    const isOpen = p.isOpen;
+    let rateText = '';
+    if (i > 0) {
+      const prev = allPoints[i-1];
+      const hours = (p.time.getTime() - prev.time.getTime()) / 3600000;
+      const channels = p.channel - prev.channel;
+      const rate = hours > 0 ? channels / hours : 0;
+      rateText = `<span class="ref-rate">${rate.toFixed(0)}频/时</span>`;
+    }
+
+    let refIdx = -1;
+    if (!isOpen && state.referencePoints) {
+      refIdx = state.referencePoints.findIndex(rp => rp.channel === p.channel);
+    }
+
+    const deleteBtn = isOpen ? '' : `<button class="ref-delete" onclick="removeReferencePoint(${refIdx})" title="删除此参考点">✕</button>`;
+    const openBadge = isOpen ? '<span class="ref-badge">开服</span>' : '';
+    const timeStr = `${pad(p.time.getHours())}:${pad(p.time.getMinutes())}`;
+
+    html += `
+      <div class="ref-point-item ${isOpen ? 'ref-open' : ''}">
+        <div class="ref-point-main">
+          ${openBadge}
+          <span class="ref-channel">📺 ${p.channel}频道</span>
+          <span class="ref-time">🕐 ${timeStr}</span>
+        </div>
+        <div class="ref-point-side">
+          ${rateText}
+          ${deleteBtn}
+        </div>
+      </div>
+    `;
+  }
+  listEl.innerHTML = html;
+}
+
+function toggleRefPoints() {
+  const content = document.getElementById('refPointsContent');
+  const group = document.querySelector('.ref-points-group');
+  if (content.classList.contains('hidden')) {
+    content.classList.remove('hidden');
+    group.classList.add('expanded');
+  } else {
+    content.classList.add('hidden');
+    group.classList.remove('expanded');
+  }
+}
+
+function updateRefCount() {
+  const countEl = document.getElementById('refCount');
+  if (countEl && state.referencePoints) {
+    countEl.textContent = state.referencePoints.length;
+  }
+}
+
+function addReferencePoint() {
+  const timeVal = document.getElementById('newRefTime').value.trim();
+  const chVal = document.getElementById('newRefChannel').value.trim();
+  if (!timeVal || !chVal) {
+    showToast('⚠️', '输入不完整', '请填写参考时间和频道数');
+    return;
+  }
+  const ch = parseInt(chVal);
+  if (isNaN(ch) || ch < 2) {
+    showToast('❌', '频道数错误', '参考频道数必须大于等于2');
+    return;
+  }
+  const timeStr = timeToStorage(timeVal);
+  const t = new Date(timeStr.replace(/-/g, '/'));
+  if (isNaN(t.getTime())) {
+    showToast('❌', '时间错误', '请选择有效的时间');
+    return;
+  }
+  // 检查是否重复
+  if (state.referencePoints.some(p => p.channel === ch)) {
+    showToast('⚠️', '已存在', `频道 ${ch} 的参考点已存在`);
+    return;
+  }
+  state.referencePoints.push({ time: timeStr, channel: ch });
+  // 如果参考点频道号大于当前maxChannel，自动更新
+  if (!state.maxChannel || ch > state.maxChannel) {
+    state.maxChannel = ch;
+    document.getElementById('maxChannel').value = ch;
+  }
+  saveState();
+  document.getElementById('newRefTime').value = '';
+  document.getElementById('newRefChannel').value = '';
+  renderReferencePointsList();
+  renderBosses();
+  showToast('✅', '已添加', `${timeVal} 开到 ${ch} 频道`);
+  updateSettingsSummary();
+  updateRefCount();
+}
+
+
+function removeReferencePoint(index) {
+  const p = state.referencePoints[index];
+  state.referencePoints.splice(index, 1);
+  renderReferencePointsList();
+  showToast('🗑️', '已删除', `${p.channel}频道参考点已删除`);
+  updateSettingsSummary();
+  updateRefCount();
+}
+
+function saveSettings() {
+  const openTimeVal = document.getElementById('serverOpenTime').value.trim();
+  const maxCh = document.getElementById('maxChannel').value.trim();
+
+  if (!openTimeVal || !maxCh) {
+    showToast('⚠️', '设置不完整', '请填写开服时间和已开频道数');
+    return;
+  }
+
+  // 获取日期偏移
+  const dateSelect = document.getElementById('openDateSelect');
+  const dateOffset = dateSelect ? parseInt(dateSelect.value) : 0;
+  state.openDateOffset = dateOffset;
+  
+  const openTime = timeToStorage(openTimeVal, dateOffset);
+  const t0 = new Date(openTime.replace(/-/g, '/'));
+  if (isNaN(t0.getTime())) {
+    showToast('❌', '时间错误', '请选择有效的开服时间');
+    return;
+  }
+
+  const n1 = parseInt(maxCh);
+  if (isNaN(n1) || n1 < 1) {
+    showToast('❌', '频道数错误', '已开频道数必须大于等于1');
+    return;
+  }
+
+  // 检查开服时间是否改变
+  const oldOpenTime = state.serverOpenTime || '';
+  const openTimeChanged = oldOpenTime !== openTime;
+  
+  if (openTimeChanged) {
+    // 开服时间改变，重置参考点和当前频道
+    state.referencePoints = [];
+    state.maxChannel = n1;
+    document.getElementById('maxChannel').value = n1;
+    showToast('🔄', '开服时间已更新', '参考点和频道数已重置，请重新设置');
+  } else {
+    // 开服时间未改变，保持原有逻辑
+    state.serverOpenTime = openTime;
+    // 如果参考点的最大频道号大于输入的maxChannel，自动更新
+    let maxRefChannel = 0;
+    if (state.referencePoints && state.referencePoints.length > 0) {
+      maxRefChannel = Math.max(...state.referencePoints.map(p => p.channel));
+    }
+    state.maxChannel = Math.max(n1, maxRefChannel);
+    // 同步更新输入框
+    if (state.maxChannel !== n1) {
+      document.getElementById('maxChannel').value = state.maxChannel;
+    }
+  }
+  
+  state.serverOpenTime = openTime;
+  const resetPct = parseInt(document.getElementById('autoResetPercent').value);
+  state.autoResetPercent = isNaN(resetPct) ? 20 : resetPct;
+  // referencePoints 已经在添加/删除时实时更新，这里不需要再处理
+  saveState();
+  renderSettings();
+  renderBosses();
+
+  const rateInfo = getChannelRateInfo();
+  let msg = `开服 ${formatTime(t0)}，已开 ${n1} 频道`;
+  if (rateInfo && rateInfo.length > 0) {
+    const rates = rateInfo.map(s => `${s.from}-${s.to}频道约${s.rate.toFixed(0)}频/时`).join('，');
+    msg += `；分段速率：${rates}`;
+  } else {
+    msg += '（未设参考点，所有频道同时开服）';
+  }
+  showToast('✅', '设置已保存', msg);
+  updateSettingsSummary();
+}
+
+// 获取单个BOSS的所有击杀记录（带状态计算）
+function getBossKills(bossName) {
+  const now = Date.now();
+  const percent = state.autoResetPercent || 20;
+  const kills = [];
+  for (const [key, timeStr] of Object.entries(state.kills)) {
+    const parsed = parseKillKey(key);
+    if (parsed.bossName !== bossName) continue;
+    const ch = parsed.channel;
+    const map = parsed.map;
+    const killTime = new Date(timeStr);
+    const bossDef = getBossDef(bossName);
+    if (!bossDef) continue;
+
+    // 使用周期性循环逻辑计算当前轮次的刷新时间
+    const cycle = getCurrentSpawnCycle(killTime.getTime(), bossDef, percent);
+    const nextMin = cycle.min;
+    const nextMax = cycle.max;
+    const remainMs = nextMin.getTime() - now;
+    const maxRemainMs = nextMax.getTime() - now;
+
+    let statusClass, countdownText;
+    if (maxRemainMs <= 0) { statusClass = 'spawned'; countdownText = '可击杀'; }
+    else if (remainMs <= 0) { statusClass = 'spawning'; countdownText = formatCountdown(maxRemainMs); }
+    else if (remainMs <= 5 * 60000) { statusClass = 'soon'; countdownText = formatCountdown(remainMs); }
+    else { statusClass = 'waiting'; countdownText = formatCountdown(remainMs); }
+
+    kills.push({
+      ch, map, killTime, nextMin, nextMax, remainMs, maxRemainMs,
+      statusClass, countdownText, encodedKey: encodeURIComponent(key),
+      cycle: cycle.cycle
+    });
+  }
+  // 按频道号排序，同频道按地图排序
+  kills.sort((a, b) => {
+    if (parseInt(a.ch) !== parseInt(b.ch)) return parseInt(a.ch) - parseInt(b.ch);
+    if (a.map && b.map) return a.map.localeCompare(b.map);
+    return 0;
+  });
+  return kills;
+}
+
+// 解析击杀记录key，返回{channel, bossName, map}
+function parseKillKey(key) {
+  const underscoreIdx = key.indexOf('_');
+  const channel = key.substring(0, underscoreIdx);
+  const rest = key.substring(underscoreIdx + 1);
+  // 检查是否是多地图BOSS（rest中包含下划线）
+  const secondUnderscore = rest.indexOf('_');
+  if (secondUnderscore >= 0) {
+    const bossName = rest.substring(0, secondUnderscore);
+    const map = rest.substring(secondUnderscore + 1);
+    return { channel, bossName, map };
+  }
+  return { channel, bossName: rest, map: null };
+}
+
+// 自动重置：刷新完后过一定百分比时间，自动清除击杀记录
+function autoResetExpiredKills() {
+  const percent = state.autoResetPercent || 20;
+  if (percent <= 0) return;
+  const now = Date.now();
+  let resetCount = 0;
+  const toDelete = [];
+
+  for (const [key, timeStr] of Object.entries(state.kills)) {
+    const parsed = parseKillKey(key);
+    const bossDef = getBossDef(parsed.bossName);
+    if (!bossDef) continue;
+    const killTime = new Date(timeStr).getTime();
+    const maxMs = bossDef.maxRebirth * 60000;
+    const resetTime = killTime + maxMs + (maxMs * percent / 100);
+    if (now > resetTime) {
+      toDelete.push(key);
+    }
+  }
+
+  for (const key of toDelete) {
+    delete state.kills[key];
+    delete state.notified[key];
+    resetCount++;
+  }
+
+  if (resetCount > 0) {
+    saveState();
+  }
+}
+
+// 隐藏/显示BOSS
+function toggleHideBoss(bossName) {
+  const idx = state.hiddenBosses.indexOf(bossName);
+  if (idx >= 0) {
+    state.hiddenBosses.splice(idx, 1);
+  } else {
+    state.hiddenBosses.push(bossName);
+  }
+  saveState();
+  renderBosses();
+}
+
+// 显示所有隐藏的BOSS
+function showAllHiddenBosses() {
+  if (state.hiddenBosses.length === 0) return;
+  state.hiddenBosses = [];
+  saveState();
+  renderBosses();
+  closeHiddenManager();
+}
+
+// 打开隐藏管理面板
+function openHiddenManager() {
+  const panel = document.getElementById('hiddenManager');
+  panel.classList.remove('hidden');
+  renderHiddenBossList();
+}
+
+// 关闭隐藏管理面板
+function closeHiddenManager() {
+  document.getElementById('hiddenManager').classList.add('hidden');
+}
+
+// 渲染隐藏BOSS列表
+function renderHiddenBossList() {
+  const listEl = document.getElementById('hiddenBossList');
+  if (state.hiddenBosses.length === 0) {
+    listEl.innerHTML = '<div class="hidden-empty">👁️ 没有隐藏的BOSS</div>';
+    return;
+  }
+  listEl.innerHTML = state.hiddenBosses.map(name => {
+    const boss = BOSS_DATA.find(b => b.name === name);
+    const iconHtml = boss && boss.iconUrl
+      ? `<img src="${boss.iconUrl}" alt="${name}" class="hbc-icon" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      : `<span class="hbc-icon-fallback">👾</span>`;
+    const levelText = boss ? `Lv.${boss.level}` : '';
+    return `<div class="hidden-boss-card">
+      ${iconHtml}
+      <div class="hbc-info">
+        <div class="hbc-name">${name}</div>
+        <div class="hbc-level">${levelText}</div>
+      </div>
+      <button class="hbc-restore" onclick="toggleHideBoss('${name}');renderHiddenBossList();">恢复</button>
+    </div>`;
+  }).join('');
+}
+
+function updateHiddenBtn() {
+  const btn = document.getElementById('showHiddenBtn');
+  const countEl = document.getElementById('hiddenCount');
+  if (!btn || !countEl) return;
+  const count = state.hiddenBosses ? state.hiddenBosses.length : 0;
+  countEl.textContent = count;
+  if (count > 0) {
+    btn.classList.add('visible');
+  } else {
+    btn.classList.remove('visible');
+  }
+}
+
+
+// 计算BOSS的刷新频道区间
+function getBossChannelSpawnInfo(bossDef) {
+  if (!state.serverOpenTime || !state.maxChannel || !bossDef) return null;
+  
+  const now = Date.now();
+  const minMs = bossDef.minRebirth * 60000;
+  const maxMs = bossDef.maxRebirth * 60000;
+  const maxChannel = state.maxChannel;
+  
+  let spawnedEnd = 0;
+  let spawningEnd = 0;
+  
+  // 简单遍历（频道数不会太大）
+  for (let ch = 1; ch <= maxChannel; ch++) {
+    const openTime = getChannelOpenTime(ch);
+    if (!openTime) continue;
+    const openMs = openTime.getTime();
+    
+    if (openMs + maxMs <= now) {
+      spawnedEnd = ch;
+      spawningEnd = ch;
+    } else if (openMs + minMs <= now) {
+      spawningEnd = ch;
+    } else {
+      break;
+    }
+  }
+  
+  return {
+    spawned: { start: 1, end: spawnedEnd },
+    spawning: { start: spawnedEnd + 1, end: spawningEnd },
+    waiting: { start: spawningEnd + 1, end: maxChannel },
+    total: maxChannel
+  };
+}
+
+function renderBosses() {
+  autoResetExpiredKills();
+  const tbody = document.getElementById('bossTableBody');
+  const emptyState = document.getElementById('emptyState');
+  const tableContainer = document.querySelector('.boss-table-container');
+  if (!tbody) return;
+
+  // 检查是否设置了开服信息
+  if (!state.serverOpenTime || !state.maxChannel) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    if (tableContainer) tableContainer.style.display = 'none';
+    tbody.innerHTML = '';
+    return;
+  } else {
+    if (emptyState) emptyState.classList.add('hidden');
+    if (tableContainer) tableContainer.style.display = '';
+  }
+
+  const now = Date.now();
+  const percent = state.autoResetPercent || 20;
+
+  const rows = BOSS_DATA.filter(b => {
+    if (state.hiddenBosses.includes(b.name)) return false;
+    return true;
+  }).map(b => {
+    const bossDef = getBossDef(b.name);
+    const kills = getBossKills(b.name);
+    const spawn = getBossSpawnInfo(b.name);
+
+    // 状态判断
+    let status = 'waiting';
+    let statusText = '待刷新';
+    let statusClass = 'status-waiting';
+
+    if (kills.length > 0) {
+      const nearest = kills[0];
+      if (nearest.remainMs <= 0) {
+        status = 'spawned';
+        statusText = '已刷新';
+        statusClass = 'status-spawned';
+      } else if (nearest.remainMs <= 300000) {
+        status = 'soon';
+        statusText = '即将刷新';
+        statusClass = 'status-soon';
+      } else {
+        status = 'spawning';
+        statusText = '刷新中';
+        statusClass = 'status-spawning';
+      }
+    }
+
+    // 最后击杀信息
+    let lastKillText = '无记录';
+    if (kills.length > 0) {
+      const k = kills[0];
+      const chText = k.map ? `${k.channel}(${k.map})` : k.channel;
+      lastKillText = `${chText}频 · ${formatTime(new Date(k.killTime))}`;
+    }
+
+    // 下次刷新时间
+    let nextSpawnText = '-';
+    if (kills.length > 0) {
+      const k = kills[0];
+      nextSpawnText = `${formatTime(k.nextMin)} ~ ${formatTime(k.nextMax)}`;
+    } else if (spawn) {
+      nextSpawnText = `${formatTime(spawn.min)} ~ ${formatTime(spawn.max)}`;
+    }
+
+    // 倒计时
+    let countdownText = '';
+    if (kills.length > 0) {
+      const k = kills[0];
+      if (k.remainMs <= 0) {
+        countdownText = '已刷新';
+      } else {
+        countdownText = formatCountdown(k.remainMs);
+      }
+    }
+
+    const iconHtml = b.iconUrl
+      ? `<img src="${b.iconUrl}" alt="${b.name}" class="boss-icon" onerror="this.style.display='none'">`
+      : `<div class="boss-icon-fallback">${b.name.charAt(0)}</div>`;
+
+    // 计算刷新频道区间
+    const channelInfo = getBossChannelSpawnInfo(bossDef);
+    let channelHtml = '<div class="channel-info"><span style="color:#64748b">--</span></div>';
+    if (channelInfo) {
+      const segments = [];
+      let barHtml = '';
+      
+      if (channelInfo.spawned.end > 0) {
+        segments.push(`<div class="channel-row"><span class="channel-dot spawned"></span><span class="channel-text spawned">${channelInfo.spawned.start}-${channelInfo.spawned.end} 已刷新</span></div>`);
+        const pct = (channelInfo.spawned.end / channelInfo.total) * 100;
+        barHtml += `<div class="channel-bar-segment spawned" style="width:${pct}%"></div>`;
+      }
+      if (channelInfo.spawning.end >= channelInfo.spawning.start && channelInfo.spawning.end > 0) {
+        segments.push(`<div class="channel-row"><span class="channel-dot spawning"></span><span class="channel-text spawning">${channelInfo.spawning.start}-${channelInfo.spawning.end} 刷新中</span></div>`);
+        const pct = ((channelInfo.spawning.end - channelInfo.spawning.start + 1) / channelInfo.total) * 100;
+        barHtml += `<div class="channel-bar-segment spawning" style="width:${pct}%"></div>`;
+      }
+      if (channelInfo.waiting.end >= channelInfo.waiting.start && channelInfo.waiting.end > 0) {
+        segments.push(`<div class="channel-row"><span class="channel-dot waiting"></span><span class="channel-text waiting">${channelInfo.waiting.start}-${channelInfo.waiting.end} 待刷新</span></div>`);
+        const pct = ((channelInfo.waiting.end - channelInfo.waiting.start + 1) / channelInfo.total) * 100;
+        barHtml += `<div class="channel-bar-segment waiting" style="width:${pct}%"></div>`;
+      }
+      
+      channelHtml = `<div class="channel-info">${segments.join('')}<div class="channel-bar">${barHtml}</div></div>`;
+    }
+
+    return `
+      <tr class="boss-row ${statusClass}">
+        <td class="td-boss">
+          <div class="boss-info">
+            <div class="boss-icon-wrap">${iconHtml}</div>
+            <div class="boss-name-wrap">
+              <div class="boss-name">${b.name}</div>
+              <div class="boss-meta">Lv.${b.level} · ${minutesToText(bossDef.minRebirth)}~${minutesToText(bossDef.maxRebirth)}</div>
+            </div>
+          </div>
+        </td>
+        <td class="td-next">
+          <div class="next-time-text">${nextSpawnText}</div>
+          ${countdownText ? `<div class="spawn-countdown ${statusClass}">${countdownText}</div>` : ''}
+        </td>
+        <td class="td-channels">
+          ${channelHtml}
+        </td>
+        <td class="td-status">
+          <span class="status-badge ${statusClass}">${statusText}</span>
+        </td>
+        <td class="td-action">
+          <button class="btn btn-success btn-sm" data-action="kill" data-boss="${b.name}">⚔️ 击杀</button>
+          <button class="btn btn-hide btn-sm" onclick="toggleHideBoss('${b.name}')" title="隐藏">👁️</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.innerHTML = rows || '<tr><td colspan="5" class="no-boss">没有找到匹配的BOSS</td></tr>';
+  updateHiddenBtn();
+
+  // 更新隐藏BOSS按钮
+  const hiddenCount = state.hiddenBosses.length;
+  const showHiddenBtn = document.getElementById('showHiddenBtn');
+  const hiddenCountEl = document.getElementById('hiddenCount');
+  if (hiddenCount > 0) {
+    showHiddenBtn.style.display = 'inline-flex';
+    hiddenCountEl.textContent = hiddenCount;
+  } else {
+    showHiddenBtn.style.display = 'none';
+  }
+  
+  // 同时渲染手机端卡片
+  renderBossCards();
+}
+
+// ============================================================
+// 击杀 / 重置
+// ============================================================
+// 切换设置栏折叠
+
+function renderBossCards() {
+  try {
+    const container = document.getElementById('bossCardsContainer');
+    if (!container) return;
+    
+    if (!state.serverOpenTime || !state.maxChannel) {
+      container.innerHTML = '';
+      return;
+    }
+    
+    const bosses = BOSS_DATA.filter(b => !state.hiddenBosses.includes(b.name));
+    
+    let html = '';
+    for (const b of bosses) {
+      const bossDef = getBossDef(b.name);
+      const kills = getBossKills(b.name);
+      const spawn = getBossSpawnInfo(b.name);
+      
+      // 状态判断 - 参考renderBosses的逻辑
+      let status = 'waiting';
+      let statusText = '待刷新';
+      let statusClass = 'status-waiting';
+      
+      if (kills && kills.length > 0) {
+        const nearest = kills[0] || kills;
+        if (nearest.remainMs <= 0) {
+          status = 'spawned';
+          statusText = '已刷新';
+          statusClass = 'status-spawned';
+        } else if (nearest.remainMs <= 300000) {
+          status = 'soon';
+          statusText = '即将刷新';
+          statusClass = 'status-soon';
+        } else {
+          status = 'spawning';
+          statusText = '刷新中';
+          statusClass = 'status-spawning';
+        }
+      }
+      
+      // 下次刷新时间和倒计时
+      let nextSpawnText = '-';
+      let countdownText = '--:--:--';
+      let remainMs = 0;
+      
+      if (kills && kills.length > 0) {
+        const k = kills[0] || kills;
+        if (k.nextMin && k.nextMax) {
+          nextSpawnText = formatTime(k.nextMin) + ' ~ ' + formatTime(k.nextMax);
+        }
+        remainMs = k.remainMs || 0;
+      } else if (spawn) {
+        if (spawn.earliest) {
+          nextSpawnText = formatTime(spawn.earliest);
+        }
+        remainMs = spawn.remainMs || 0;
+      }
+      
+      if (remainMs > 0) {
+        const totalSec = Math.floor(remainMs / 1000);
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        countdownText = h + ':' + pad(m) + ':' + pad(s);
+      } else {
+        countdownText = '已刷新';
+      }
+      
+      // 刷新频道信息
+      let channelText = '-';
+      if (spawn && spawn.spawnedChannel && spawn.spawnedChannel > 0) {
+        channelText = '1~' + spawn.spawnedChannel + '频';
+      } else if (spawn && spawn.spawningChannel && spawn.spawningChannel > 0) {
+        channelText = '刷新中';
+      }
+      
+      const iconUrl = b.iconUrl || '';
+      const levelText = b.level ? 'Lv.' + b.level : '';
+      const rebirthText = bossDef ? minutesToText(bossDef.minRebirth) + '~' + minutesToText(bossDef.maxRebirth) : '';
+      
+      html += '<div class="boss-card">';
+      html += '  <div class="boss-card-header">';
+      html += '    <img class="boss-card-icon" src="' + iconUrl + '" alt="' + b.name + '" onerror="this.style.background=\'rgba(255,255,255,0.05)\';this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%23334155%22 width=%2240%22 height=%2240%22 rx=%228%22/><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 fill=%22%2394a3b8%22 font-size=%2216%22>👾</text></svg>\'">';
+      html += '    <div class="boss-card-info">';
+      html += '      <div class="boss-card-name">' + b.name + '</div>';
+      html += '      <div class="boss-card-meta">' + levelText + ' · ' + rebirthText + '</div>';
+      html += '    </div>';
+      html += '    <div class="boss-card-status">';
+      html += '      <span class="status-badge ' + statusClass + '">' + statusText + '</span>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '  <div class="boss-card-body">';
+      html += '    <div class="boss-card-item">';
+      html += '      <div class="boss-card-label">下次刷新</div>';
+      html += '      <div class="boss-card-value">' + nextSpawnText + '</div>';
+      html += '    </div>';
+      html += '    <div class="boss-card-item">';
+      html += '      <div class="boss-card-label">剩余时间</div>';
+      html += '      <div class="boss-card-value countdown ' + status + '">' + countdownText + '</div>';
+      html += '    </div>';
+      html += '    <div class="boss-card-item">';
+      html += '      <div class="boss-card-label">刷新频道</div>';
+      html += '      <div class="boss-card-value">' + channelText + '</div>';
+      html += '    </div>';
+      html += '    <div class="boss-card-item">';
+      html += '      <div class="boss-card-label">刷新间隔</div>';
+      html += '      <div class="boss-card-value">' + rebirthText + '</div>';
+      html += '    </div>';
+      html += '  </div>';
+      
+      // 刷新概率进度条
+      const spawnProb = getBossSpawnProbability(b.name);
+      if (spawnProb && spawnProb.spawningEnd > 0) {
+        html += getSpawnProbabilityBarHtml(spawnProb);
+      }
+      
+      html += '  <div class="boss-card-actions">';
+      html += '    <button class="btn btn-success" onclick="openChannelModal(\'' + b.name.replace(/'/g, "\\'") + '\')">⚔️ 击杀</button>';
+      html += '    <button class="btn btn-hide" onclick="toggleHideBoss(\'' + b.name.replace(/'/g, "\\'") + '\')" title="隐藏">👁️</button>';
+      html += '  </div>';
+      html += '</div>';
+    }
+    
+    container.innerHTML = html;
+  } catch (e) {
+    console.error('renderBossCards error:', e);
+    const container = document.getElementById('bossCardsContainer');
+    if (container) {
+      container.innerHTML = '<div style="padding:20px;text-align:center;color:#f87171;">卡片渲染出错：' + e.message + '</div>';
+    }
+  }
+}
+
+function toggleSettings() {
+  state.settingsCollapsed = !state.settingsCollapsed;
+  const bar = document.getElementById('settingsBar');
+  if (state.settingsCollapsed) {
+    bar.classList.add('collapsed');
+  } else {
+    bar.classList.remove('collapsed');
+  }
+  saveState();
+}
+
+// 更新设置栏统计信息
+function updateSettingsSummary() {
+  // 开服时间
+  const openTimeEl = document.getElementById('statOpenTime');
+  if (openTimeEl) {
+    openTimeEl.textContent = state.serverOpenTime ? storageToTime(state.serverOpenTime) : '--:--';
+  }
+  // 已开频道
+  const maxChEl = document.getElementById('statMaxChannel');
+  if (maxChEl) {
+    maxChEl.textContent = state.maxChannel || '--';
+  }
+  // 当前速率（最后一段的速率）
+  const rateEl = document.getElementById('statRate');
+  if (rateEl) {
+    const points = getSortedReferencePoints();
+    if (points.length >= 2) {
+      const p1 = points[points.length - 2];
+      const p2 = points[points.length - 1];
+      const hours = (p2.time.getTime() - p1.time.getTime()) / 3600000;
+      const channels = p2.channel - p1.channel;
+      const rate = hours > 0 ? channels / hours : 0;
+      rateEl.textContent = `${rate.toFixed(0)}/时`;
+    } else {
+      rateEl.textContent = '--';
+    }
+  }
+  // 参考点数量
+  const refCountEl = document.getElementById('statRefCount');
+  if (refCountEl) {
+    const count = state.referencePoints ? state.referencePoints.length : 0;
+    refCountEl.textContent = count;
+  }
+}
+
+
+function openKillModal(bossName) {
+  pendingKillBoss = bossName;
+  const bossDef = getBossDef(bossName);
+  document.getElementById('killBossName').value = bossName;
+  document.getElementById('killChannel').value = '';
+
+
+  openModal('killModal');
+  setTimeout(() => document.getElementById('killChannel').focus(), 100);
+}
+
+
+function resetBoss(bossName) {
+  // 查找该BOSS所有击杀记录，让用户选择删除哪个
+  const kills = Object.entries(state.kills).filter(([k]) => k.endsWith('_' + bossName));
+  if (kills.length === 0) {
+    showToast('ℹ️', '无记录', `${bossName} 没有击杀记录`);
+    return;
+  }
+  if (kills.length === 1) {
+    const [key] = kills;
+    const ch = key.split('_')[0];
+    if (!confirm(`确定删除 ${bossName} - 频道 ${ch} 的击杀记录？`)) return;
+    delete state.kills[key];
+    delete state.notified[key];
+    saveState();
+    renderBosses();
+    renderKillLog();
+    showToast('↺', '已重置', `${bossName} - 频道 ${ch} 击杀记录已清除`);
+    return;
+  }
+  // 多条记录，列出让用户选择
+  const list = kills.map(([k, t]) => {
+    const ch = k.split('_')[0];
+    return `频道 ${ch} (${formatTime(new Date(t))})`;
+  }).join('\n');
+  const chStr = prompt(`${bossName} 有以下击杀记录，输入要删除的频道号：\n\n${list}`);
+  if (!chStr) return;
+  const key = `${parseInt(chStr)}_${bossName}`;
+  if (state.kills[key]) {
+    delete state.kills[key];
+    delete state.notified[key];
+    saveState();
+    renderBosses();
+    renderKillLog();
+    showToast('↺', '已重置', `${bossName} - 频道 ${chStr} 击杀记录已清除`);
+  } else {
+    showToast('❌', '未找到', `频道 ${chStr} 没有 ${bossName} 的击杀记录`);
+  }
+}
+
+// ============================================================
+// 模态框
+// ============================================================
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// ============================================================
+// 导入导出
+// ============================================================
+function exportConfig() {
+  const data = JSON.stringify(state);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(data).then(() => {
+      showToast('📋', '已复制', '配置已复制到剪贴板，可粘贴分享或备份');
+    }).catch(() => {
+      fallbackCopy(data);
+    });
+  } else {
+    fallbackCopy(data);
+  }
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showToast('📋', '已复制', '配置已复制到剪贴板'); }
+  catch(e) { showToast('❌', '复制失败', '请手动复制'); }
+  document.body.removeChild(ta);
+}
+
+function openImportModal() {
+  document.getElementById('importText').value = '';
+  openModal('importModal');
+  setTimeout(() => document.getElementById('importText').focus(), 100);
+}
+function confirmImport() {
+  const text = document.getElementById('importText').value.trim();
+  if (!text) {
+    showToast('⚠️', '内容为空', '请先粘贴配置文本');
+    return;
+  }
+  try {
+    const data = JSON.parse(text);
+    state = { ...state, ...data };
+    if (!state.kills) state.kills = {};
+    if (!state.bossOverrides) state.bossOverrides = {};
+    if (!state.notified) state.notified = {};
+    saveState();
+    renderSettings();
+    renderBosses();
+    renderKillLog();
+    renderTopKillCards();
+    closeModal('importModal');
+    showToast('📥', '导入成功', '配置已加载（包含击杀记录）');
+  } catch(err) {
+    showToast('❌', '导入失败', '配置文本格式错误');
+  }
+}
+
+function clearAllData() {
+  if (!confirm('确定要清空所有击杀记录吗？开服时间、频道设置、参考点等配置会保留。')) return;
+  state.kills = {};
+  state.notified = {};
+  saveState();
+  renderBosses();
+  renderKillLog();
+  renderTopKillCards();
+  showToast('🗑️', '已清空', '所有击杀记录已清除，配置已保留');
+}
+
+// ============================================================
+// 击杀记录面板
+// ============================================================
+function toggleKillLog() {
+  const panel = document.getElementById('killLogPanel');
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) {
+    renderKillLog();
+  }
+}
+
+function renderKillLog() {
+  const listEl = document.getElementById('killLogList');
+  const panel = document.getElementById('killLogPanel');
+  if (panel.classList.contains('hidden')) return;
+
+  const now = Date.now();
+  const percent = state.autoResetPercent || 20;
+  const entries = [];
+  for (const [key, timeStr] of Object.entries(state.kills)) {
+    const parsed = parseKillKey(key);
+    const ch = parsed.channel;
+    const bossName = parsed.bossName;
+    const map = parsed.map;
+    const killTime = new Date(timeStr);
+    const bossDef = getBossDef(bossName);
+    const bossBase = BOSS_DATA.find(b => b.name === bossName);
+    if (!bossDef) continue;
+    // 使用周期性循环逻辑
+    const cycle = getCurrentSpawnCycle(killTime.getTime(), bossDef, percent);
+    const nextMin = cycle.min;
+    const nextMax = cycle.max;
+    const remainMs = nextMin.getTime() - now;
+    const maxRemainMs = nextMax.getTime() - now;
+    entries.push({ ch, map, bossName, killTime, nextMin, nextMax, remainMs, maxRemainMs, key, bossDef, bossBase });
+  }
+
+  // 按下次刷新时间排序（最快刷新的排前面）
+  entries.sort((a, b) => a.remainMs - b.remainMs);
+
+  if (entries.length === 0) {
+    listEl.innerHTML = '<div class="kill-log-empty">⚔️ 暂无击杀记录，点击BOSS卡片的"击杀"按钮记录</div>';
+    return;
+  }
+
+  listEl.innerHTML = entries.slice(0, 100).map(e => {
+    let statusClass, statusText, countdownText;
+    if (e.maxRemainMs <= 0) {
+      statusClass = 'spawned'; statusText = '已刷新'; countdownText = '可击杀';
+    } else if (e.remainMs <= 0) {
+      statusClass = 'spawning'; statusText = '刷新中'; countdownText = formatCountdown(e.maxRemainMs);
+    } else if (e.remainMs <= 5 * 60000) {
+      statusClass = 'soon'; statusText = '即将刷新'; countdownText = formatCountdown(e.remainMs);
+    } else {
+      statusClass = 'waiting'; statusText = '等待中'; countdownText = formatCountdown(e.remainMs);
+    }
+
+    const iconHtml = e.bossBase && e.bossBase.iconUrl
+      ? `<img src="${e.bossBase.iconUrl}" alt="${e.bossName}" class="kl-icon" onerror="this.style.display='none'">`
+      : `<span class="kl-icon-fallback">👾</span>`;
+
+    const encodedKey = encodeURIComponent(e.key);
+    return `
+      <div class="kill-log-card kl-${statusClass}">
+        <div class="kl-icon-wrap">${iconHtml}</div>
+        <div class="kl-info">
+          <div class="kl-top">
+            <span class="kl-boss-name">${e.bossName}</span>
+            <span class="kl-channel-badge">📺 ${e.ch}频道</span>
+            ${e.map ? `<span class="kl-map-badge">🗺️ ${e.map}</span>` : ''}
+          </div>
+          <div class="kl-meta">
+            <span>⚔️ ${formatTime(e.killTime)}</span>
+            <span>⏰ ${formatTime(e.nextMin)}~${formatTime(e.nextMax)}</span>
+          </div>
+        </div>
+        <div class="kl-status">
+          <div class="kl-countdown ${statusClass}">${countdownText}</div>
+          <div class="kl-status-text ${statusClass}">${statusText}</div>
+        </div>
+        <button class="kl-delete" onclick="deleteKillRecord('${encodedKey}')" title="删除此记录">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+// 渲染顶部击杀记录卡片
+function renderTopKillCards() {
+  const container = document.getElementById('topKillCards');
+  if (!container) return;
+
+  const now = Date.now();
+  const percent = state.autoResetPercent || 20;
+  const entries = [];
+
+  for (const [key, timeStr] of Object.entries(state.kills)) {
+    const parsed = parseKillKey(key);
+    const ch = parsed.channel;
+    const bossName = parsed.bossName;
+    const map = parsed.map;
+    const killTime = new Date(timeStr);
+    const bossDef = getBossDef(bossName);
+    const bossBase = BOSS_DATA.find(b => b.name === bossName);
+    if (!bossDef) continue;
+
+    const cycle = getCurrentSpawnCycle(killTime.getTime(), bossDef, percent);
+    const nextMin = cycle.min;
+    const nextMax = cycle.max;
+    const remainMs = nextMin.getTime() - now;
+    const maxRemainMs = nextMax.getTime() - now;
+
+    entries.push({ ch, map, bossName, killTime, nextMin, nextMax, remainMs, maxRemainMs, key, bossDef, bossBase });
+  }
+
+  // 按下次刷新时间排序（最快刷新的排前面）
+  entries.sort((a, b) => a.remainMs - b.remainMs);
+
+  if (entries.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = entries.slice(0, 20).map(e => {
+    let statusClass, statusText, countdownText;
+    if (e.maxRemainMs <= 0) {
+      statusClass = 'tk-spawned'; statusText = '已刷新'; countdownText = '可击杀';
+    } else if (e.remainMs <= 0) {
+      statusClass = 'tk-spawning'; statusText = '刷新中'; countdownText = formatCountdown(e.maxRemainMs);
+    } else if (e.remainMs <= 5 * 60000) {
+      statusClass = 'tk-soon'; statusText = '即将刷新'; countdownText = formatCountdown(e.remainMs);
+    } else {
+      statusClass = 'tk-waiting'; statusText = '等待中'; countdownText = formatCountdown(e.remainMs);
+    }
+
+    const iconHtml = e.bossBase && e.bossBase.iconUrl
+      ? `<img src="${e.bossBase.iconUrl}" alt="${e.bossName}" class="tk-icon" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      : `<span class="tk-icon-fallback">👾</span>`;
+
+    const mapText = e.map ? ` (${e.map})` : '';
+    const nextTimeStr = formatTime(e.nextMin);
+
+    return `
+      <div class="tk-card ${statusClass}">
+        <button class="tk-remove" onclick="removeKill('${e.key}')" title="删除记录">✕</button>
+        ${iconHtml}
+        <div class="tk-info">
+          <div class="tk-name">${e.bossName}${mapText}</div>
+          <div class="tk-channel">频道 <span>${e.ch}</span></div>
+          <div class="tk-countdown ${statusClass}">${countdownText}</div>
+          <div class="tk-status ${statusClass}">${statusText}</div>
+          <div class="tk-next-time">下次: ${nextTimeStr}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 删除击杀记录
+function removeKill(key) {
+  if (state.kills[key]) {
+    delete state.kills[key];
+    saveState();
+    renderTopKillCards();
+    renderBosses();
+    renderKillLog();
+    showToast('🗑️', '已删除', '击杀记录已删除');
+  }
+}
+
+
+function deleteKillRecord(encodedKey) {
+  const key = decodeURIComponent(encodedKey);
+  if (!state.kills[key]) return;
+  const parts = key.split('_');
+  const ch = parts[0];
+  const bossName = parts.slice(1).join('_');
+  if (!confirm(`确定删除 ${bossName} - 频道 ${ch} 的击杀记录？`)) return;
+  delete state.kills[key];
+  delete state.notified[key];
+  saveState();
+  renderBosses();
+  renderKillLog();
+  showToast('🗑️', '已删除', `${bossName} - 频道 ${ch} 记录已删除`);
+}
+
+function clearKillLog() {
+  if (!confirm('确定要清空所有击杀记录吗？（开服设置和刷新时间设置会保留）')) return;
+  state.kills = {};
+  state.notified = {};
+  saveState();
+  renderBosses();
+  renderKillLog();
+  showToast('🗑️', '已清空', '击杀记录已清除');
+}
+
+// ============================================================
+// 提醒
+// ============================================================
+function showToast(icon, title, msg, type='info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      <div class="toast-msg">${msg}</div>
+    </div>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    toast.style.transition = 'all 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function playBeep() {
+  // 已禁用声音提醒
+}
+
+function requestNotificationPermission() {
+  // 已禁用浏览器通知权限请求
+}
+
+function sendNotification(title, body) {
+  // 已禁用浏览器通知
+}
+
+// ============================================================
+// 初始化
+// ============================================================
+function directKill(bossName, channel) {
+  const bossDef = getBossDef(bossName);
+  if (!bossDef) return;
+  const killKey = `${channel}_${bossName}`;
+  state.kills[killKey] = new Date().toISOString();
+  saveState();
+  renderBosses();
+  checkBigSpawn();
+  showToast('✅', '已记录', `${bossName} ${channel}频道击杀已记录`);
+}
+
+// ============================================================
+// 追杀模式
+// ============================================================
+let chaseMode = false;
+let currentChaseBoss = '';
+
+function toggleChaseMode() {
+  chaseMode = !chaseMode;
+  const btn = document.getElementById('chaseModeBtn');
+  if (btn) {
+    btn.classList.toggle('active', chaseMode);
+    btn.textContent = chaseMode ? '🎯 追杀中' : '🎯 追杀';
+  }
+  if (chaseMode) {
+    showToast('🎯', '追杀模式', '已击杀频道按刷新顺序排列，黄色闪烁为下一个目标');
+  }
+  // 重新渲染频道网格
+  if (currentKillBoss) {
+    openChannelModal(currentKillBoss);
+  }
+}
+
+function getChaseOrder(bossName) {
+  // 获取已击杀的频道，按下次刷新时间排序
+  const killedChannels = [];
+  const bossDef = getBossDef(bossName);
+  if (!bossDef) return [];
+  
+  for (const [key, timeStr] of Object.entries(state.kills)) {
+    const parsed = parseKillKey(key);
+    if (parsed.bossName === bossName) {
+      const killTime = new Date(timeStr);
+      const nextSpawn = new Date(killTime.getTime() + bossDef.maxRebirth * 60000);
+      killedChannels.push({
+        channel: parsed.channel,
+        killTime: killTime,
+        nextSpawn: nextSpawn,
+        remain: nextSpawn - new Date()
+      });
+    }
+  }
+  
+  // 按剩余时间排序（最先刷新的排前面）
+  killedChannels.sort((a, b) => a.remain - b.remain);
+  return killedChannels;
+}
+
+// ============================================================
+// 大刷概念：10分钟内击杀6个boss记录时间点
+// ============================================================
+function checkBigSpawn() {
+  const now = new Date();
+  const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+  
+  // 统计10分钟内的击杀数
+  let recentKills = [];
+  for (const [key, timeStr] of Object.entries(state.kills)) {
+    const killTime = new Date(timeStr);
+    if (killTime >= tenMinutesAgo && killTime <= now) {
+      recentKills.push({ key: key, time: killTime });
+    }
+  }
+  
+  // 按时间排序
+  recentKills.sort((a, b) => a.time - b.time);
+  
+  // 如果10分钟内击杀6个或以上，记录大刷时间点
+  if (recentKills.length >= 6) {
+    // 检查是否已经记录过这个大刷（避免重复记录）
+    const firstKillTime = recentKills[0].time;
+    const lastKillTime = recentKills[recentKills.length - 1].time;
+    
+    if (!state.bigSpawnRecords) state.bigSpawnRecords = [];
+    
+    // 检查最近5分钟内是否已经记录过大刷
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    const alreadyRecorded = state.bigSpawnRecords.some(r => new Date(r.time) >= fiveMinutesAgo);
+    
+    if (!alreadyRecorded) {
+      state.bigSpawnRecords.push({
+        time: now.toISOString(),
+        killCount: recentKills.length,
+        firstKill: firstKillTime.toISOString(),
+        lastKill: lastKillTime.toISOString(),
+        bosses: [...new Set(recentKills.map(k => parseKillKey(k.key).bossName))]
+      });
+      saveState();
+      showToast('🔥', '大刷检测', `检测到10分钟内击杀${recentKills.length}个BOSS，已记录大刷时间点`);
+    }
+  }
+}
+
+// ============================================================
+// 统计分析：预测大刷时间
+// ============================================================
+function predictNextBigSpawn() {
+  if (!state.bigSpawnRecords || state.bigSpawnRecords.length < 2) {
+    return null;
+  }
+  
+  // 计算大刷之间的平均间隔
+  const records = [...state.bigSpawnRecords].sort((a, b) => new Date(a.time) - new Date(b.time));
+  const intervals = [];
+  for (let i = 1; i < records.length; i++) {
+    const interval = new Date(records[i].time) - new Date(records[i-1].time);
+    intervals.push(interval);
+  }
+  
+  const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+  const lastBigSpawn = new Date(records[records.length - 1].time);
+  const predictedNext = new Date(lastBigSpawn.getTime() + avgInterval);
+  
+  return {
+    avgInterval: avgInterval,
+    lastBigSpawn: lastBigSpawn,
+    predictedNext: predictedNext,
+    recordCount: records.length
+  };
+}
+
+
+// 打开统计模态框
+function openStatsModal() {
+  renderStats();
+  openModal('statsModal');
+}
+
+// 渲染统计内容
+function renderStats() {
+  const container = document.getElementById('statsContent');
+  if (!container) return;
+
+  const now = Date.now();
+  const percent = state.autoResetPercent || 20;
+
+  // ========== 大刷分析 ==========
+  let bigSpawnHtml = '<div style="margin-bottom:16px;padding:12px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:10px">';
+  bigSpawnHtml += '<div style="font-size:14px;font-weight:700;color:#c084fc;margin-bottom:10px">🔥 大刷分析</div>';
+  
+  // 预测下次大刷
+  const prediction = predictNextBigSpawn();
+  if (prediction) {
+    const remainMs = prediction.predictedNext.getTime() - now;
+    const remainStr = remainMs > 0 ? formatDuration(remainMs) : '已到预测时间';
+    bigSpawnHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    bigSpawnHtml += '<span style="font-size:12px;color:#94a3b8">预测下次大刷</span>';
+    bigSpawnHtml += '<span style="font-size:16px;font-weight:700;color:#c084fc">' + remainStr + '</span>';
+    bigSpawnHtml += '</div>';
+    bigSpawnHtml += '<div style="font-size:11px;color:#64748b">预计时间: ' + formatTime(prediction.predictedNext) + ' | 平均间隔: ' + formatDuration(prediction.avgInterval) + ' | 记录数: ' + prediction.recordCount + '</div>';
+  } else {
+    bigSpawnHtml += '<div style="font-size:12px;color:#64748b;text-align:center;padding:8px">大刷记录不足2次，无法预测（10分钟内击杀6个BOSS记录一次）</div>';
+  }
+  
+  // 历史大刷记录
+  if (state.bigSpawnRecords && state.bigSpawnRecords.length > 0) {
+    bigSpawnHtml += '<div style="margin-top:10px;border-top:1px solid rgba(168,85,247,0.2);padding-top:8px">';
+    bigSpawnHtml += '<div style="font-size:11px;color:#64748b;margin-bottom:6px">历史大刷记录 (' + state.bigSpawnRecords.length + ')</div>';
+    const sortedRecords = [...state.bigSpawnRecords].sort((a, b) => new Date(b.time) - new Date(a.time));
+    for (const rec of sortedRecords.slice(0, 5)) {
+      bigSpawnHtml += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0">';
+      bigSpawnHtml += '<span style="color:#a78bfa">' + formatTime(new Date(rec.time)) + '</span>';
+      bigSpawnHtml += '<span style="color:#64748b">' + rec.killCount + '击杀</span>';
+      bigSpawnHtml += '</div>';
+    }
+    bigSpawnHtml += '</div>';
+  }
+  bigSpawnHtml += '</div>';
+
+  // 收集所有击杀记录
+  const killRecords = [];
+  for (const [key, timeStr] of Object.entries(state.kills)) {
+    const parsed = parseKillKey(key);
+    const bossDef = getBossDef(parsed.bossName);
+    if (!bossDef) continue;
+
+    const killTime = new Date(timeStr).getTime();
+    const cycle = getCurrentSpawnCycle(killTime, bossDef, percent);
+    const nextMin = cycle.min.getTime();
+    const nextMax = cycle.max.getTime();
+
+    killRecords.push({
+      boss: parsed.bossName,
+      channel: parsed.channel,
+      killTime: killTime,
+      nextMin: nextMin,
+      nextMax: nextMax,
+      remainMs: nextMin - now,
+      maxRemainMs: nextMax - now,
+      key: key
+    });
+  }
+
+  // 按击杀时间排序（最新的排前面）
+  killRecords.sort((a, b) => b.killTime - a.killTime);
+
+  if (killRecords.length === 0) {
+    container.innerHTML = bigSpawnHtml + '<div style="text-align:center;padding:40px;color:#64748b">暂无击杀记录</div>';
+    return;
+  }
+
+  // 计算统计数据
+  const totalKills = killRecords.length;
+  let finalHtml = bigSpawnHtml;
+  const spawnedCount = killRecords.filter(r => r.maxRemainMs <= 0).length;
+  const spawningCount = killRecords.filter(r => r.remainMs <= 0 && r.maxRemainMs > 0).length;
+  const soonCount = killRecords.filter(r => r.remainMs > 0 && r.remainMs <= 5 * 60000).length;
+  const waitingCount = killRecords.filter(r => r.remainMs > 5 * 60000).length;
+
+  // 按BOSS分组统计，并计算平均击杀时间（从刷新到击杀的间隔）
+  const bossStats = {};
+  for (const r of killRecords) {
+    if (!bossStats[r.boss]) {
+      bossStats[r.boss] = { count: 0, channels: new Set(), lastKill: 0, totalKillDelay: 0, killDelays: [] };
+    }
+    bossStats[r.boss].count++;
+    bossStats[r.boss].channels.add(r.channel);
+    bossStats[r.boss].lastKill = Math.max(bossStats[r.boss].lastKill, r.killTime);
+    
+    // 计算从刷新到击杀的时间间隔
+    const bossDef = getBossDef(r.boss);
+    if (bossDef) {
+      // 查找该频道该BOSS的上一次击杀时间
+      const prevKillKey = `${r.channel}_${r.boss}`;
+      let spawnTime = null;
+      
+      // 查找是否有上一次击杀记录
+      const prevKills = killRecords.filter(k => k.boss === r.boss && k.channel === r.channel && k.killTime < r.killTime);
+      if (prevKills.length > 0) {
+        // 有上一次击杀，刷新时间 = 上一次击杀时间 + 最小刷新时间
+        const prevKill = prevKills[prevKills.length - 1];
+        spawnTime = prevKill.killTime + bossDef.minRebirth * 60000;
+      } else {
+        // 第一次击杀，刷新时间 = 频道开服时间 + 最小刷新时间
+        const channelOpenTime = getChannelOpenTime(r.channel);
+        if (channelOpenTime) {
+          spawnTime = channelOpenTime.getTime() + bossDef.minRebirth * 60000;
+        }
+      }
+      
+      if (spawnTime) {
+        const killDelay = r.killTime - spawnTime;
+        if (killDelay > 0) {
+          bossStats[r.boss].totalKillDelay += killDelay;
+          bossStats[r.boss].killDelays.push(killDelay);
+        }
+      }
+    }
+  }
+
+  // 按击杀次数排序
+  const bossSorted = Object.entries(bossStats).sort((a, b) => b[1].count - a[1].count);
+
+  let html = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+      <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:700;color:#60a5fa">${totalKills}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px">总击杀数</div>
+      </div>
+      <div style="background:rgba(74,222,128,0.1);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:700;color:#4ade80">${spawnedCount}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px">已刷新</div>
+      </div>
+      <div style="background:rgba(251,191,36,0.1);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:700;color:#fbbf24">${spawningCount + soonCount}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px">刷新中/即将</div>
+      </div>
+      <div style="background:rgba(100,116,139,0.1);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:700;color:#94a3b8">${waitingCount}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:4px">等待中</div>
+      </div>
+    </div>
+
+    <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:8px">🏆 BOSS击杀排行</div>
+    <div style="margin-bottom:16px">
+  `;
+
+  // BOSS击杀排行（包含平均击杀时间）
+  for (let i = 0; i < Math.min(bossSorted.length, 10); i++) {
+    const [bossName, stats] = bossSorted[i];
+    const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7f32' : '#64748b';
+    
+    // 计算平均击杀时间
+    let avgKillDelayText = '--';
+    if (stats.killDelays && stats.killDelays.length > 0) {
+      const avgDelay = stats.totalKillDelay / stats.killDelays.length;
+      const minutes = Math.floor(avgDelay / 60000);
+      const seconds = Math.floor((avgDelay % 60000) / 1000);
+      avgKillDelayText = `${minutes}分${seconds}秒`;
+    }
+    
+    html += `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.02);border-radius:6px;margin-bottom:4px">
+        <span style="font-size:14px;font-weight:700;color:${rankColor};width:24px;text-align:center">${i+1}</span>
+        <span style="flex:1;font-size:12px;color:#e2e8f0">${bossName}</span>
+        <span style="font-size:11px;color:#93c5fd;background:rgba(59,130,246,0.15);padding:2px 8px;border-radius:4px">${stats.count}次</span>
+        <span style="font-size:11px;color:#fbbf24;background:rgba(251,191,36,0.15);padding:2px 8px;border-radius:4px" title="从刷新到击杀的平均时间">平均${avgKillDelayText}</span>
+      </div>
+    `;
+  }
+
+  html += `</div>
+    <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:8px">📋 最近击杀记录</div>
+    <div style="max-height:200px;overflow-y:auto">
+  `;
+
+  // 最近击杀记录
+  for (let i = 0; i < Math.min(killRecords.length, 20); i++) {
+    const r = killRecords[i];
+    const killDate = new Date(r.killTime);
+    const timeStr = `${(killDate.getMonth()+1).toString().padStart(2,'0')}/${killDate.getDate().toString().padStart(2,'0')} ${killDate.getHours().toString().padStart(2,'0')}:${killDate.getMinutes().toString().padStart(2,'0')}`;
+
+    let statusText, statusColor;
+    if (r.maxRemainMs <= 0) { statusText = '已刷新'; statusColor = '#4ade80'; }
+    else if (r.remainMs <= 0) { statusText = '刷新中'; statusColor = '#fbbf24'; }
+    else if (r.remainMs <= 5 * 60000) { statusText = '即将刷新'; statusColor = '#fb923c'; }
+    else { statusText = '等待中'; statusColor = '#94a3b8'; }
+
+    html += `
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;background:rgba(255,255,255,0.02);border-radius:6px;margin-bottom:3px">
+        <span style="flex:1;font-size:12px;color:#e2e8f0">${r.boss}</span>
+        <span style="font-size:11px;color:#93c5fd;background:rgba(59,130,246,0.15);padding:1px 6px;border-radius:4px">${r.channel}频</span>
+        <span style="font-size:11px;color:#64748b;width:90px;text-align:right">${timeStr}</span>
+        <span style="font-size:11px;color:${statusColor};width:60px;text-align:right">${statusText}</span>
+      </div>
+    `;
+  }
+
+  html += '</div>';
+
+  container.innerHTML = finalHtml + html;
+}
+
+
+// 切换下拉面板
+function toggleDropdown(id) {
+  const panel = document.getElementById(id);
+  const toggle = panel.previousElementSibling;
+  const isHidden = panel.classList.contains('hidden');
+  
+  // 关闭所有其他下拉面板
+  document.querySelectorAll('.dropdown-panel').forEach(p => {
+    if (p.id !== id) p.classList.add('hidden');
+  });
+  document.querySelectorAll('.dropdown-toggle').forEach(t => {
+    t.classList.remove('active');
+  });
+  
+  if (isHidden) {
+    panel.classList.remove('hidden');
+    toggle.classList.add('active');
+    // 如果是统计面板，渲染统计内容
+    if (id === 'statsDropdown') {
+      renderStats();
+    }
+  } else {
+    panel.classList.add('hidden');
+    toggle.classList.remove('active');
+  }
+}
+
+// 关闭下拉面板
+function closeDropdown(id) {
+  const panel = document.getElementById(id);
+  const toggle = panel.previousElementSibling;
+  panel.classList.add('hidden');
+  toggle.classList.remove('active');
+}
+
+// 点击外部关闭下拉面板
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.dropdown-wrapper')) {
+    document.querySelectorAll('.dropdown-panel').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.dropdown-toggle').forEach(t => t.classList.remove('active'));
+  }
+});
+
+
+// ============================================================
+// 频道选择模态框
+// ============================================================
+let currentKillBoss = '';
+let selectedChannels = new Set();
+let killedChannels = new Set();
+
+function openChannelModal(bossName) {
+  currentKillBoss = bossName;
+  selectedChannels.clear();
+  killedChannels.clear();
+  document.getElementById('channelModalBossName').textContent = bossName;
+  document.getElementById('channelSelectedInfo').textContent = '';
+  document.getElementById('channelModalHint').textContent = '点击频道选中（变灰），再次点击确认击杀，击杀后再点击可取消';
+  document.getElementById('channelModalFooter').innerHTML = '';
+  
+  // 先读取输入框里的当前频道数，以用户修改的为准
+  const maxChannelInput = document.getElementById('maxChannel');
+  if (maxChannelInput && parseInt(maxChannelInput.value) > 0) {
+    state.maxChannel = parseInt(maxChannelInput.value);
+    saveState();
+  }
+  
+  // 生成频道按钮（支持追杀模式排序）
+  const grid = document.getElementById('channelGrid');
+  const maxCh = state.maxChannel || 100;
+  let html = '';
+  
+  // 追杀模式：计算已击杀频道的刷新顺序
+  let channelOrder = [];
+  let nextChaseChannel = -1;
+  if (chaseMode && bossDef) {
+    // 收集已击杀频道及其刷新时间
+    const killedList = [];
+    for (const [key, timeStr] of Object.entries(state.kills)) {
+      const parsed = parseKillKey(key);
+      if (parsed.bossName === bossName) {
+        const channel = parseInt(parsed.channel);
+        if (channel >= 1 && channel <= maxCh) {
+          const killTime = new Date(timeStr);
+          const nextMin = new Date(killTime.getTime() + bossDef.minRebirth * 60000);
+          const remain = nextMin - new Date();
+          killedList.push({ channel: channel, remain: remain, nextMin: nextMin });
+        }
+      }
+    }
+    // 按剩余时间排序（最先刷新的排前面）
+    killedList.sort((a, b) => a.remain - b.remain);
+    const killedChannelsArr = killedList.map(k => k.channel);
+    // 找到下一个目标（第一个还没刷新的，如果都刷新了取第一个）
+    const notSpawned = killedList.find(k => k.remain > 0);
+    nextChaseChannel = notSpawned ? notSpawned.channel : (killedList.length > 0 ? killedList[0].channel : -1);
+    // 其他频道按正常顺序
+    const otherChannels = [];
+    for (let i = 1; i <= maxCh; i++) {
+      if (!killedChannelsArr.includes(i)) otherChannels.push(i);
+    }
+    channelOrder = [...killedChannelsArr, ...otherChannels];
+  } else {
+    for (let i = 1; i <= maxCh; i++) channelOrder.push(i);
+  }
+  
+  for (const i of channelOrder) {
+    const isChaseNext = (i === nextChaseChannel);
+    let btnClass = 'channel-btn';
+    if (isChaseNext) btnClass += ' chase-next';
+    html += `<button class="${btnClass}" data-channel="${i}" onclick="selectChannel(${i})">${i}</button>`;
+  }
+  grid.innerHTML = html;
+  
+  // 从击杀记录中恢复已击杀的频道
+  const bossDef = getBossDef(bossName);
+  for (const [key, timeStr] of Object.entries(state.kills)) {
+    const parsed = parseKillKey(key);
+    if (parsed.bossName === bossName) {
+      const channel = parseInt(parsed.channel);
+      if (channel >= 1 && channel <= maxCh) {
+        killedChannels.add(channel);
+        const btn = document.querySelector(`.channel-btn[data-channel="${channel}"]`);
+        if (btn && bossDef) {
+          const killTime = new Date(timeStr);
+          const nextMin = new Date(killTime.getTime() + bossDef.minRebirth * 60000);
+          const nextMax = new Date(killTime.getTime() + bossDef.maxRebirth * 60000);
+          const nextTimeText = `${formatTime(nextMin)}~${formatTime(nextMax)}`;
+          btn.classList.add('killed');
+          btn.innerHTML = `<div class="btn-channel-num">${channel}</div><div class="btn-next-time">${nextTimeText}</div>`;
+        }
+      }
+    }
+  }
+  
+  // 更新已击杀数量提示
+  if (killedChannels.size > 0) {
+    document.getElementById('channelSelectedInfo').textContent = `已击杀 ${killedChannels.size} 个频道`;
+  }
+  
+  document.getElementById('channelSelectModal').classList.add('show');
+}
+
+function selectChannel(channel) {
+  const btn = document.querySelector(`.channel-btn[data-channel="${channel}"]`);
+  if (!btn) return;
+  
+  if (killedChannels.has(channel)) {
+    // 第三次点击：取消击杀（撤销误杀）
+    cancelChannelKill(channel);
+  } else if (selectedChannels.has(channel)) {
+    // 第二次点击：确认击杀
+    confirmChannelKill(channel);
+  } else {
+    // 第一次点击：选中（变灰）
+    selectedChannels.add(channel);
+    btn.classList.add('selected');
+    updateSelectedInfo();
+  }
+}
+
+function confirmChannelKill(channel) {
+  // 执行击杀
+  directKill(currentKillBoss, channel);
+  
+  // 标记为已击杀
+  killedChannels.add(channel);
+  selectedChannels.delete(channel);
+  
+  // 计算下次刷新时间
+  const bossDef = getBossDef(currentKillBoss);
+  let nextTimeText = '';
+  if (bossDef) {
+    const killTime = new Date();
+    const nextMin = new Date(killTime.getTime() + bossDef.minRebirth * 60000);
+    const nextMax = new Date(killTime.getTime() + bossDef.maxRebirth * 60000);
+    nextTimeText = `${formatTime(nextMin)}~${formatTime(nextMax)}`;
+    
+    // 底部显示击杀成功
+    const footer = document.getElementById('channelModalFooter');
+    footer.innerHTML = `
+      <div class="kill-result">
+        <div class="success">✅ 频道 ${channel} ${currentKillBoss} 击杀成功</div>
+        <div class="next-spawn">下次刷新：${formatTime(nextMin)} ~ ${formatTime(nextMax)}</div>
+      </div>
+    `;
+  }
+  
+  // 更新按钮样式和内容（绿色按钮，显示频道号+下次刷新时间）
+  const btn = document.querySelector(`.channel-btn[data-channel="${channel}"]`);
+  if (btn) {
+    btn.classList.remove('selected');
+    btn.classList.add('killed');
+    btn.innerHTML = `<div class="btn-channel-num">${channel}</div><div class="btn-next-time">${nextTimeText}</div>`;
+  }
+  
+  updateSelectedInfo();
+}
+
+function cancelChannelKill(channel) {
+  // 从击杀记录中删除
+  const killKey = `${channel}_${currentKillBoss}`;
+  if (state.kills[killKey]) {
+    delete state.kills[killKey];
+    saveState();
+  }
+  
+  // 从已击杀集合中移除
+  killedChannels.delete(channel);
+  
+  // 恢复按钮样式和内容为频道号
+  const btn = document.querySelector(`.channel-btn[data-channel="${channel}"]`);
+  if (btn) {
+    btn.classList.remove('killed');
+    btn.innerHTML = channel;
+  }
+  
+  // 清除底部的击杀结果
+  document.getElementById('channelModalFooter').innerHTML = '';
+  document.getElementById('channelModalHint').textContent = '点击频道选中（变灰），再次点击确认击杀，击杀后再点击可取消';
+  
+  updateSelectedInfo();
+}
+
+function updateSelectedInfo() {
+  const info = document.getElementById('channelSelectedInfo');
+  if (selectedChannels.size > 0) {
+    const channels = Array.from(selectedChannels).sort((a, b) => a - b);
+    info.textContent = `已选中 ${selectedChannels.size} 个频道（再次点击确认击杀）`;
+  } else {
+    info.textContent = '';
+  }
+}
+
+function resetChannelSelection() {
+  selectedChannels.clear();
+  killedChannels.clear();
+  document.querySelectorAll('.channel-btn').forEach(btn => {
+    btn.classList.remove('selected', 'killed');
+    const ch = btn.getAttribute('data-channel');
+    btn.innerHTML = ch;
+  });
+  document.getElementById('channelSelectedInfo').textContent = '';
+  document.getElementById('channelModalFooter').innerHTML = '';
+  document.getElementById('channelModalHint').textContent = '点击频道选中（变灰），再次点击确认击杀，击杀后再点击可取消';
+}
+
+function quickSelectChannel() {
+  const input = document.getElementById('quickChannelInput');
+  const channel = parseInt(input.value);
+  if (!channel || channel < 1) {
+    showToast('⚠️', '输入无效', '请输入有效的频道号');
+    return;
+  }
+  const maxCh = state.maxChannel || 100;
+  if (channel > maxCh) {
+    showToast('⚠️', '超出范围', `频道号不能超过 ${maxCh}`);
+    return;
+  }
+  
+  // 滚动到该频道位置
+  const btn = document.querySelector(`.channel-btn[data-channel="${channel}"]`);
+  if (btn) {
+    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // 高亮显示
+    btn.classList.add('highlight');
+    setTimeout(() => btn.classList.remove('highlight'), 2000);
+  }
+  
+  // 选中该频道（变灰）
+  if (!killedChannels.has(channel) && !selectedChannels.has(channel)) {
+    selectChannel(channel);
+  }
+  
+  input.value = '';
+  input.focus();
+}
+
+function quickKillChannel() {
+  const input = document.getElementById('quickChannelInput');
+  const channel = parseInt(input.value);
+  if (!channel || channel < 1) {
+    showToast('⚠️', '输入无效', '请输入有效的频道号');
+    return;
+  }
+  const maxCh = state.maxChannel || 100;
+  if (channel > maxCh) {
+    showToast('⚠️', '超出范围', `频道号不能超过 ${maxCh}`);
+    return;
+  }
+  
+  // 如果已经击杀了，就取消击杀
+  if (killedChannels.has(channel)) {
+    cancelChannelKill(channel);
+  } else {
+    // 直接击杀该频道
+    if (!selectedChannels.has(channel)) {
+      selectedChannels.add(channel);
+    }
+    confirmChannelKill(channel);
+  }
+  
+  input.value = '';
+  input.focus();
+}
+
+function closeChannelModal() {
+  document.getElementById('channelSelectModal').classList.remove('show');
+  currentKillBoss = '';
+  selectedChannels.clear();
+  killedChannels.clear();
+  chaseMode = false;
+  const btn = document.getElementById('chaseModeBtn');
+  if (btn) { btn.classList.remove('active'); btn.textContent = '🎯 追杀'; }
+}
+
+// 点击模态框外部关闭
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('channelSelectModal');
+  if (modal && modal.classList.contains('show') && e.target === modal) {
+    closeChannelModal();
+  }
+});
+
+
+function init() {
+  loadState();
+  renderSettings();
+  renderBosses();
+  renderTopKillCards();
+
+
+  // 事件委托：击杀/重置按钮
+  document.getElementById('bossTableBody').addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const boss = btn.dataset.boss;
+    if (action === 'kill') {
+      openChannelModal(boss);
+    }
+    else if (action === 'reset') resetBoss(boss);
+  });
+
+  // 模态框点击外部关闭
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.remove('show');
+    });
+  });
+
+
+  // 每秒刷新
+  setInterval(() => { renderBosses(); renderKillLog(); renderTopKillCards(); }, 1000);
+}
+
+init();
+</script>
+
+<!-- 频道选择模态框 -->
+<div id="channelSelectModal" class="channel-modal-overlay">
+  <div class="channel-modal">
+    <div class="channel-modal-header">
+      <span class="channel-modal-title">⚔️ 选择频道 - <span id="channelModalBossName"></span></span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="channelSelectedInfo" style="font-size:12px;color:#94a3b8"></span>
+        <button class="btn btn-sm btn-primary" onclick="toggleChaseMode()" id="chaseModeBtn">🎯 追杀</button>
+        <button class="btn btn-sm" onclick="resetChannelSelection()">🔄 重置</button>
+        <button class="btn btn-sm" onclick="closeChannelModal()">✕</button>
+      </div>
+    </div>
+    <div class="channel-modal-hint" id="channelModalHint">点击频道选中（变灰），再次点击确认击杀，击杀后再点击可取消</div>
+    <div class="channel-quick-input">
+      <input type="number" id="quickChannelInput" placeholder="输入频道号快速定位" min="1" style="flex:1;padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#e2e8f0;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')quickSelectChannel()">
+      <button class="btn btn-sm btn-primary" onclick="quickSelectChannel()" style="white-space:nowrap">🎯 选中</button>
+      <button class="btn btn-sm btn-success" onclick="quickKillChannel()" style="white-space:nowrap">⚔️ 直接击杀</button>
+    </div>
+    <div class="channel-grid" id="channelGrid"></div>
+    <div class="channel-modal-footer" id="channelModalFooter"></div>
+  </div>
+</div>
+
+</body>
+</html>
+
+
+
+
+
+
+
