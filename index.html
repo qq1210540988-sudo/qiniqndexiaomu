@@ -3493,6 +3493,45 @@ function openStatsModal() {
 }
 
 // 渲染统计内容
+function getKillRecords() {
+  if (!state.killRecords) state.killRecords = [];
+  return state.killRecords;
+}
+
+function getKillStats() {
+  const records = getKillRecords();
+  const bossStats = {};
+  let totalKills = records.length;
+  let totalTime = 0;
+  
+  for (const r of records) {
+    if (!bossStats[r.bossName]) {
+      bossStats[r.bossName] = { count: 0, totalTime: 0 };
+    }
+    bossStats[r.bossName].count++;
+    if (r.duration) {
+      bossStats[r.bossName].totalTime += r.duration;
+      totalTime += r.duration;
+    }
+  }
+  
+  // 计算平均时间
+  for (const name in bossStats) {
+    const b = bossStats[name];
+    b.avgTime = b.count > 0 ? Math.round(b.totalTime / b.count / 60000) + '分钟' : '0分钟';
+  }
+  
+  const avgKillTime = totalKills > 0 ? Math.round(totalTime / totalKills / 60000) + '分钟' : '0分钟';
+  const bossCount = Object.keys(bossStats).length;
+  
+  return {
+    totalKills: totalKills,
+    bossCount: bossCount,
+    avgKillTime: avgKillTime,
+    bossStats: bossStats
+  };
+}
+
 function renderStats() {
   const stats = getKillStats();
   const predictedNext = predictNextBigSpawn();
