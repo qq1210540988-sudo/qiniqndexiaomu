@@ -3618,6 +3618,21 @@ function openChannelModal(bossName) {
   currentKillBoss = bossName;
   selectedChannels.clear();
   killedChannels.clear();
+  
+  // 从state.kills加载已击杀的频道
+  const bossDefLocal = getBossDef(bossName);
+  if (bossDefLocal) {
+    for (const [key, timeStr] of Object.entries(state.kills)) {
+      const parsed = parseKillKey(key);
+      if (parsed.bossName === bossName) {
+        const channel = parseInt(parsed.channel);
+        if (channel >= 1) {
+          killedChannels.add(channel);
+        }
+      }
+    }
+  }
+  
   document.getElementById('channelModalBossName').textContent = bossName;
   document.getElementById('channelSelectedInfo').textContent = '';
   document.getElementById('channelModalHint').textContent = '点击频道选中（变灰），再次点击确认击杀，击杀后再点击可取消';
