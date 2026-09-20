@@ -1475,6 +1475,36 @@ html { width: 100%; overflow-x: hidden; }
     color: #94a3b8;
   }
   .channel-btn.killed {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-color: #10b981;
+    color: white;
+  }
+  .channel-btn .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .channel-btn .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s, background 0.3s;
+  }
+  .channel-btn.phase-green {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+  .channel-btn.phase-yellow {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+  .channel-btn.phase-red {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  }
+  .channel-btn.phase-purple {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  }
+  .channel-btn.killed-2 {
     background: linear-gradient(135deg, rgba(74,222,128,0.3), rgba(34,197,94,0.2));
     border: 2px solid #4ade80;
     color: #4ade80;
@@ -3795,9 +3825,38 @@ function openChannelModal(bossName) {
           const killTime = new Date(timeStr);
           const nextMin = new Date(killTime.getTime() + bossDef.minRebirth * 60000);
           const nextMax = new Date(killTime.getTime() + bossDef.maxRebirth * 60000);
+          const now = new Date();
+          
+          // 计算进度
+          const totalRange = nextMax - nextMin;
+          let progress = 0;
+          let phase = 'green';
+          
+          if (now < nextMin) {
+            // 还没到最低刷新时间，绿色
+            const preRange = nextMin - killTime;
+            progress = Math.min(100, ((now - killTime) / preRange) * 100);
+            phase = 'green';
+          } else if (now < nextMax) {
+            // 在最低和最大之间，从绿变红
+            progress = Math.min(100, ((now - nextMin) / totalRange) * 100);
+            if (progress < 33) phase = 'yellow';
+            else if (progress < 66) phase = 'orange';
+            else phase = 'red';
+          } else {
+            // 超过最大刷新时间，紫色
+            progress = 100;
+            phase = 'purple';
+          }
+          
           const nextTimeText = `${formatTime(nextMin)}~${formatTime(nextMax)}`;
-          btn.classList.add('killed');
-          btn.innerHTML = `<div class="btn-channel-num">${channel}</div><div class="btn-next-time">${nextTimeText}</div>`;
+          btn.classList.add('killed', 'phase-' + phase);
+          btn.innerHTML = `<div class="btn-channel-num">${channel}</div><div class="btn-next-time">${nextTimeText}</div><div class="progress-bar"><div class="progress-fill" style="width:${progress}%;background:${
+            phase === 'green' ? '#10b981' :
+            phase === 'yellow' ? '#f59e0b' :
+            phase === 'orange' ? '#f97316' :
+            phase === 'red' ? '#ef4444' : '#8b5cf6'
+          }"></div></div>`;
         }
       }
     }
