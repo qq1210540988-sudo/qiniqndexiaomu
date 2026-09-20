@@ -3938,6 +3938,27 @@ document.addEventListener('click', function(e) {
 
 
 function init() {
+  // 事件委托：击杀按钮
+  document.getElementById('bossTableBody').addEventListener('click', function(e) {
+    const killBtn = e.target.closest('[data-action="kill"]');
+    if (killBtn) {
+      const bossName = killBtn.dataset.boss;
+      openChannelModal(bossName);
+    }
+  });
+  
+  // 手机端卡片事件委托
+  const cardsContainer = document.getElementById('bossCardsContainer');
+  if (cardsContainer) {
+    cardsContainer.addEventListener('click', function(e) {
+      const killBtn = e.target.closest('[data-action="kill"]');
+      if (killBtn) {
+        const bossName = killBtn.dataset.boss;
+        openChannelModal(bossName);
+      }
+    });
+  }
+  
   loadState();
   renderSettings();
   renderBosses();
