@@ -2771,9 +2771,7 @@ function renderBosses() {
       }
     }
 
-    const iconHtml = b.iconUrl
-      ? `<img src="${b.iconUrl}" alt="${b.name}" class="boss-icon" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="boss-icon-fallback" style="display:none">${b.name.charAt(0)}</div>`
-      : `<div class="boss-icon-fallback">${b.name.charAt(0)}</div>`;
+    const iconHtml = `<div class="boss-icon-fallback">${b.name.charAt(0)}</div>`;
 
     // 计算刷新频道区间
     const channelInfo = getBossChannelSpawnInfo(bossDef);
