@@ -3653,18 +3653,20 @@ function openChannelModal(bossName) {
         }
       }
     }
-    // 按剩余时间排序（最先刷新的排前面）
+    // 按剩余时间排序（最先刷新的排前面，剩余时间少的排最前面）
     killedList.sort((a, b) => a.remain - b.remain);
     const killedChannelsArr = killedList.map(k => k.channel);
     // 找到下一个目标（第一个还没刷新的，如果都刷新了取第一个）
     const notSpawned = killedList.find(k => k.remain > 0);
     nextChaseChannel = notSpawned ? notSpawned.channel : (killedList.length > 0 ? killedList[0].channel : -1);
-    // 其他频道按正常顺序
+    // 其他频道按正常顺序排后面
     const otherChannels = [];
     for (let i = 1; i <= maxCh; i++) {
       if (!killedChannelsArr.includes(i)) otherChannels.push(i);
     }
+    // 已击杀频道（按刷新时间排序）排最前面，其他频道排后面
     channelOrder = [...killedChannelsArr, ...otherChannels];
+    console.log('追杀模式排序:', killedChannelsArr, '已击杀频道排最前面');
   } else {
     for (let i = 1; i <= maxCh; i++) channelOrder.push(i);
   }
