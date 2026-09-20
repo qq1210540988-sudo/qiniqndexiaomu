@@ -551,17 +551,17 @@
     
     /* ========== 下拉面板 ========== */
     .dropdown-panel {
-      width: calc(100vw - 24px) !important;
-      max-width: 100vw !important;
+      width: 320px !important;
+      max-width: calc(100vw - 24px) !important;
       left: 12px !important;
-      right: 12px !important;
+      right: auto !important;
       z-index: 1000 !important;
     }
     .dropdown-header { font-size: 14px; padding: 12px 16px; }
     .dropdown-panel textarea { 
       font-size: 13px !important; 
-      min-height: 150px !important;
-      height: 200px !important;
+      min-height: 100px !important;
+      height: 120px !important;
       width: 100% !important;
     }
     .dropdown-panel .btn { font-size: 13px; padding: 10px 16px; width: 100%; }
@@ -3106,7 +3106,7 @@ function confirmImport() {
     renderBosses();
     renderKillLog();
     
-    closeModal('importModal');
+    closeDropdown('importDropdown');
     showToast('📥', '导入成功', '配置已加载（包含击杀记录）');
   } catch(err) {
     showToast('❌', '导入失败', '配置文本格式错误');
@@ -4015,10 +4015,4 @@ init();
 
 </body>
 </html>
-
-
-
-
-
-
 
