@@ -3716,7 +3716,7 @@ function openChannelModal(bossName) {
           
           const nextTimeText = `${formatTime(nextMin)}~${formatTime(nextMax)}`;
           btn.classList.add('killed', 'phase-' + phase);
-          btn.innerHTML = `<div class="btn-channel-num">${channel}</div><div class="btn-next-time">${nextTimeText}</div><div class="progress-bar"><div class="progress-fill" style="width:${progress}%;background:${
+          btn.innerHTML = `<div class="btn-channel-num">${channel}</div><div class="progress-bar"><div class="progress-fill" style="width:${progress}%;background:${
             phase === 'green' ? '#10b981' :
             phase === 'yellow' ? '#f59e0b' :
             phase === 'orange' ? '#f97316' :
