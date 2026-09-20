@@ -2137,6 +2137,17 @@ function formatTime(dt) {
   return `${pad(dt.getMonth()+1)}/${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
 }
 
+function formatDuration(ms) {
+  if (ms <= 0) return '已到';
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return h + '小时' + m + '分';
+  if (m > 0) return m + '分' + s + '秒';
+  return s + '秒';
+}
+
 function formatTimeFull(dt) {
   return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
 }
@@ -4005,14 +4016,4 @@ init();
     <div class="channel-modal-hint" id="channelModalHint">点击频道选中（变灰），再次点击确认击杀，击杀后再点击可取消</div>
     <div class="channel-quick-input">
       <input type="number" id="quickChannelInput" placeholder="输入频道号快速定位" min="1" style="flex:1;padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#e2e8f0;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')quickSelectChannel()">
-      <button class="btn btn-sm btn-primary" onclick="quickSelectChannel()" style="white-space:nowrap">🎯 选中</button>
-      <button class="btn btn-sm btn-success" onclick="quickKillChannel()" style="white-space:nowrap">⚔️ 直接击杀</button>
-    </div>
-    <div class="channel-grid" id="channelGrid"></div>
-    <div class="channel-modal-footer" id="channelModalFooter"></div>
-  </div>
-</div>
-
-</body>
-</html>
-
+      <button class="btn btn-sm btn-primary" onclick="quickSelectChannel()" style="white
