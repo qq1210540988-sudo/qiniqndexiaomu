@@ -3638,38 +3638,39 @@ function openChannelModal(bossName) {
   // 追杀模式：计算已击杀频道的刷新顺序
   let channelOrder = [];
   let nextChaseChannel = -1;
-  if (chaseMode && bossDef) {
-    // 收集已击杀频道及其刷新时间
-    const killedList = [];
-    for (const [key, timeStr] of Object.entries(state.kills)) {
-      const parsed = parseKillKey(key);
-      if (parsed.bossName === bossName) {
-        const channel = parseInt(parsed.channel);
-        if (channel >= 1 && channel <= maxCh) {
-          const killTime = new Date(timeStr);
-          const nextMin = new Date(killTime.getTime() + bossDef.minRebirth * 60000);
-          const remain = nextMin - new Date();
-          killedList.push({ channel: channel, remain: remain, nextMin: nextMin });
-        }
+  
+  // 收集已击杀频道及其刷新时间
+  const killedList = [];
+  for (const [key, timeStr] of Object.entries(state.kills)) {
+    const parsed = parseKillKey(key);
+    if (parsed.bossName === bossName) {
+      const channel = parseInt(parsed.channel);
+      if (channel >= 1 && channel <= maxCh) {
+        const killTime = new Date(timeStr);
+        const nextMin = new Date(killTime.getTime() + bossDef.minRebirth * 60000);
+        const remain = nextMin - new Date();
+        killedList.push({ channel: channel, remain: remain, nextMin: nextMin });
       }
     }
-    // 按剩余时间排序（最先刷新的排前面，剩余时间少的排最前面）
-    killedList.sort((a, b) => a.remain - b.remain);
-    const killedChannelsArr = killedList.map(k => k.channel);
-    // 找到下一个目标（第一个还没刷新的，如果都刷新了取第一个）
-    const notSpawned = killedList.find(k => k.remain > 0);
-    nextChaseChannel = notSpawned ? notSpawned.channel : (killedList.length > 0 ? killedList[0].channel : -1);
-    // 其他频道按正常顺序排后面
-    const otherChannels = [];
-    for (let i = 1; i <= maxCh; i++) {
-      if (!killedChannelsArr.includes(i)) otherChannels.push(i);
-    }
-    // 已击杀频道（按刷新时间排序）排最前面，其他频道排后面
-    channelOrder = [...killedChannelsArr, ...otherChannels];
-    console.log('追杀模式排序:', killedChannelsArr, '已击杀频道排最前面');
-  } else {
-    for (let i = 1; i <= maxCh; i++) channelOrder.push(i);
   }
+  
+  // 按剩余时间排序（最先刷新的排前面，剩余时间少的排最前面）
+  killedList.sort((a, b) => a.remain - b.remain);
+  const killedChannelsArr = killedList.map(k => k.channel);
+  
+  // 找到下一个目标（第一个还没刷新的，如果都刷新了取第一个）
+  const notSpawned = killedList.find(k => k.remain > 0);
+  nextChaseChannel = notSpawned ? notSpawned.channel : (killedList.length > 0 ? killedList[0].channel : -1);
+  
+  // 其他频道按正常顺序排后面
+  const otherChannels = [];
+  for (let i = 1; i <= maxCh; i++) {
+    if (!killedChannelsArr.includes(i)) otherChannels.push(i);
+  }
+  
+  // 已击杀频道（按刷新时间排序）排最前面，其他频道排后面
+  channelOrder = [...killedChannelsArr, ...otherChannels];
+  console.log('排序:', killedChannelsArr, '已击杀频道排最前面');
   
   for (const i of channelOrder) {
     const isChaseNext = (i === nextChaseChannel);
