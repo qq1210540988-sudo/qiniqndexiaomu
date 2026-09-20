@@ -422,21 +422,23 @@ html { width: 100%; overflow-x: hidden; }
     .boss-cards-container { 
       display: grid !important; 
       grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      padding: 0;
+      gap: 8px;
+      padding: 0 4px;
       width: 100%;
       box-sizing: border-box;
+      overflow-x: hidden;
     }
     
     /* ========== BOSS卡片 ========== */
     .boss-card {
       background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.06);
       border-radius: 10px;
       padding: 10px;
-      margin-bottom: 0;
-      display: flex;
-      flex-direction: column;
+      margin: 0;
+      min-width: 0;
+      overflow: hidden;
+      box-sizing: border-box;
     }
     
     /* 卡片头部 */
