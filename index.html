@@ -6,11 +6,16 @@
 <title>多频道 BOSS 计时器 - Artale</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+html { width: 100%; overflow-x: hidden; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
     background: #0a0e17;
     color: #e2e8f0;
     min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
   }
   .header {
     background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%);
@@ -399,7 +404,7 @@
     .header-actions .btn { font-size: 11px; padding: 6px 10px; }
     
     /* ========== 设置栏 ========== */
-    .settings-bar { padding: 12px; gap: 12px; flex-direction: column; align-items: stretch; margin: 12px 0; box-sizing: border-box; }
+    .settings-bar { padding: 12px; gap: 12px; flex-direction: column; align-items: stretch; margin: 12px 0; box-sizing: border-box; width: 100%; }
     .settings-group { width: 100%; }
     .settings-group label { font-size: 12px; margin-bottom: 4px; }
     .settings-group input { font-size: 14px; padding: 10px; width: 100%; }
@@ -419,6 +424,8 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
       padding: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
     
     /* ========== BOSS卡片 ========== */
@@ -551,11 +558,12 @@
     
     /* ========== 下拉面板 ========== */
     .dropdown-panel {
-      width: 320px !important;
+      width: calc(100vw - 24px) !important;
       max-width: calc(100vw - 24px) !important;
       left: 12px !important;
       right: auto !important;
       z-index: 1000 !important;
+      box-sizing: border-box !important;
     }
     .dropdown-header { font-size: 14px; padding: 12px 16px; }
     .dropdown-panel textarea { 
@@ -4024,4 +4032,16 @@ init();
       <button class="btn btn-sm btn-success" onclick="quickKillChannel()" style="white-space:nowrap">⚔️ 直接击杀</button>
     </div>
     <div class="channel-grid" id="channelGrid"></div>
-    <di
+    <div class="channel-modal-footer" id="channelModalFooter"></div>
+  </div>
+</div>
+
+</body>
+</html>
+
+
+
+
+
+
+
