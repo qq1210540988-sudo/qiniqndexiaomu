@@ -864,6 +864,18 @@ html { width: 100%; overflow-x: hidden; }
     flex-shrink: 0;
   }
   .boss-icon-fallback {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 16px;
+  }
+  .boss-icon-fallback {
     width: 44px;
     height: 44px;
     border-radius: 10px;
@@ -2603,7 +2615,7 @@ function renderHiddenBossList() {
   listEl.innerHTML = state.hiddenBosses.map(name => {
     const boss = BOSS_DATA.find(b => b.name === name);
     const iconHtml = boss && boss.iconUrl
-      ? `<img src="${boss.iconUrl}" alt="${name}" class="hbc-icon" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      ? `<img src="" alt="${name}" class="hbc-icon" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
       : `<span class="hbc-icon-fallback">�</span>`;
     const levelText = boss ? `Lv.${boss.level}` : '';
     return `<div class="hidden-boss-card">
@@ -2759,9 +2771,7 @@ function renderBosses() {
       }
     }
 
-    const iconHtml = b.iconUrl
-      ? `<img src="${b.iconUrl}" alt="${b.name}" class="boss-icon" onerror="this.style.display='none'">`
-      : `<div class="boss-icon-fallback">${b.name.charAt(0)}</div>`;
+    const iconHtml = `<div class="boss-icon-fallback">${b.name.charAt(0)}</div>`;
 
     // 计算刷新频道区间
     const channelInfo = getBossChannelSpawnInfo(bossDef);
@@ -3207,7 +3217,7 @@ function renderKillLog() {
     }
 
     const iconHtml = e.bossBase && e.bossBase.iconUrl
-      ? `<img src="${e.bossBase.iconUrl}" alt="${e.bossName}" class="kl-icon" onerror="this.style.display='none'">`
+      ? `<img src="" alt="${e.bossName}" class="kl-icon" onerror="this.style.display='none'">`
       : `<span class="kl-icon-fallback">�</span>`;
 
     const encodedKey = encodeURIComponent(e.key);
