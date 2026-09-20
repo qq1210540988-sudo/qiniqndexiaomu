@@ -1475,14 +1475,14 @@ html { width: 100%; overflow-x: hidden; }
     color: #94a3b8;
   }
   .channel-btn.killed {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    border-color: #10b981;
-    color: white;
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    color: #e2e8f0;
   }
   .channel-btn .progress-bar {
     width: 100%;
     height: 4px;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.1);
     border-radius: 2px;
     margin-top: 4px;
     overflow: hidden;
@@ -1493,16 +1493,16 @@ html { width: 100%; overflow-x: hidden; }
     transition: width 0.3s, background 0.3s;
   }
   .channel-btn.phase-green {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-color: #10b981;
   }
   .channel-btn.phase-yellow {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-color: #f59e0b;
   }
   .channel-btn.phase-red {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-color: #ef4444;
   }
   .channel-btn.phase-purple {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border-color: #8b5cf6;
   }
   .channel-btn.killed-2 {
     background: linear-gradient(135deg, rgba(74,222,128,0.3), rgba(34,197,94,0.2));
@@ -3494,211 +3494,37 @@ function openStatsModal() {
 
 // 渲染统计内容
 function renderStats() {
-  const container = document.getElementById('statsContent');
-  if (!container) return;
-
-  const now = Date.now();
-  const percent = state.autoResetPercent || 20;
-
-  // ========== 大刷分析 ==========
-  let bigSpawnHtml = '<div style="margin-bottom:16px;padding:12px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:10px">';
-  bigSpawnHtml += '<div style="font-size:14px;font-weight:700;color:#c084fc;margin-bottom:10px">� 大刷分析</div>';
+  const stats = getKillStats();
+  const predictedNext = predictNextBigSpawn();
   
-  // 预测下次大刷
-  const prediction = predictNextBigSpawn();
-  if (prediction) {
-    const remainMs = prediction.predictedNext.getTime() - now;
-    const remainStr = remainMs > 0 ? formatDuration(remainMs) : '已到预测时间';
-    bigSpawnHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-    bigSpawnHtml += '<span style="font-size:12px;color:#94a3b8">预测下次大刷</span>';
-    bigSpawnHtml += '<span style="font-size:16px;font-weight:700;color:#c084fc">' + remainStr + '</span>';
-    bigSpawnHtml += '</div>';
-    bigSpawnHtml += '<div style="font-size:11px;color:#64748b">预计时间: ' + formatTime(prediction.predictedNext) + ' | 平均间隔: ' + formatDuration(prediction.avgInterval) + ' | 记录数: ' + prediction.recordCount + '</div>';
-  } else {
-    bigSpawnHtml += '<div style="font-size:12px;color:#64748b;text-align:center;padding:8px">大刷记录不足2次，无法预测（10分钟内击杀6个BOSS记录一次）</div>';
-  }
-  
-  // 历史大刷记录
-  if (state.bigSpawnRecords && state.bigSpawnRecords.length > 0) {
-    bigSpawnHtml += '<div style="margin-top:10px;border-top:1px solid rgba(168,85,247,0.2);padding-top:8px">';
-    bigSpawnHtml += '<div style="font-size:11px;color:#64748b;margin-bottom:6px">历史大刷记录 (' + state.bigSpawnRecords.length + ')</div>';
-    const sortedRecords = [...state.bigSpawnRecords].sort((a, b) => new Date(b.time) - new Date(a.time));
-    for (const rec of sortedRecords.slice(0, 5)) {
-      bigSpawnHtml += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0">';
-      bigSpawnHtml += '<span style="color:#a78bfa">' + formatTime(new Date(rec.time)) + '</span>';
-      bigSpawnHtml += '<span style="color:#64748b">' + rec.killCount + '击杀</span>';
-      bigSpawnHtml += '</div>';
-    }
-    bigSpawnHtml += '</div>';
-  }
-  bigSpawnHtml += '</div>';
-
-  // 收集所有击杀记录
-  const killRecords = [];
-  for (const [key, timeStr] of Object.entries(state.kills)) {
-    const parsed = parseKillKey(key);
-    const bossDef = getBossDef(parsed.bossName);
-    if (!bossDef) continue;
-
-    const killTime = new Date(timeStr).getTime();
-    const cycle = getCurrentSpawnCycle(killTime, bossDef, percent);
-    const nextMin = cycle.min.getTime();
-    const nextMax = cycle.max.getTime();
-
-    killRecords.push({
-      boss: parsed.bossName,
-      channel: parsed.channel,
-      killTime: killTime,
-      nextMin: nextMin,
-      nextMax: nextMax,
-      remainMs: nextMin - now,
-      maxRemainMs: nextMax - now,
-      key: key
-    });
-  }
-
-  // 按击杀时间排序（最新的排前面）
-  killRecords.sort((a, b) => b.killTime - a.killTime);
-
-  if (killRecords.length === 0) {
-    container.innerHTML = bigSpawnHtml + '<div style="text-align:center;padding:40px;color:#64748b">暂无击杀记录</div>';
-    return;
-  }
-
-  // 计算统计数据
-  const totalKills = killRecords.length;
-  let finalHtml = bigSpawnHtml;
-  const spawnedCount = killRecords.filter(r => r.maxRemainMs <= 0).length;
-  const spawningCount = killRecords.filter(r => r.remainMs <= 0 && r.maxRemainMs > 0).length;
-  const soonCount = killRecords.filter(r => r.remainMs > 0 && r.remainMs <= 5 * 60000).length;
-  const waitingCount = killRecords.filter(r => r.remainMs > 5 * 60000).length;
-
-  // 按BOSS分组统计，并计算平均击杀时间（从刷新到击杀的间隔）
-  const bossStats = {};
-  for (const r of killRecords) {
-    if (!bossStats[r.boss]) {
-      bossStats[r.boss] = { count: 0, channels: new Set(), lastKill: 0, totalKillDelay: 0, killDelays: [] };
-    }
-    bossStats[r.boss].count++;
-    bossStats[r.boss].channels.add(r.channel);
-    bossStats[r.boss].lastKill = Math.max(bossStats[r.boss].lastKill, r.killTime);
-    
-    // 计算从刷新到击杀的时间间隔
-    const bossDef = getBossDef(r.boss);
-    if (bossDef) {
-      // 查找该频道该BOSS的上一次击杀时间
-      const prevKillKey = `${r.channel}_${r.boss}`;
-      let spawnTime = null;
-      
-      // 查找是否有上一次击杀记录
-      const prevKills = killRecords.filter(k => k.boss === r.boss && k.channel === r.channel && k.killTime < r.killTime);
-      if (prevKills.length > 0) {
-        // 有上一次击杀，刷新时间 = 上一次击杀时间 + 最小刷新时间
-        const prevKill = prevKills[prevKills.length - 1];
-        spawnTime = prevKill.killTime + bossDef.minRebirth * 60000;
-      } else {
-        // 第一次击杀，刷新时间 = 频道开服时间 + 最小刷新时间
-        const channelOpenTime = getChannelOpenTime(r.channel);
-        if (channelOpenTime) {
-          spawnTime = channelOpenTime.getTime() + bossDef.minRebirth * 60000;
-        }
-      }
-      
-      if (spawnTime) {
-        const killDelay = r.killTime - spawnTime;
-        if (killDelay > 0) {
-          bossStats[r.boss].totalKillDelay += killDelay;
-          bossStats[r.boss].killDelays.push(killDelay);
-        }
-      }
-    }
-  }
-
-  // 按击杀次数排序
-  const bossSorted = Object.entries(bossStats).sort((a, b) => b[1].count - a[1].count);
-
-  let html = `
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
-      <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:12px;text-align:center">
-        <div style="font-size:24px;font-weight:700;color:#60a5fa">${totalKills}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px">总击杀数</div>
-      </div>
-      <div style="background:rgba(74,222,128,0.1);border-radius:8px;padding:12px;text-align:center">
-        <div style="font-size:24px;font-weight:700;color:#4ade80">${spawnedCount}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px">已刷新</div>
-      </div>
-      <div style="background:rgba(251,191,36,0.1);border-radius:8px;padding:12px;text-align:center">
-        <div style="font-size:24px;font-weight:700;color:#fbbf24">${spawningCount + soonCount}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px">刷新中/即将</div>
-      </div>
-      <div style="background:rgba(100,116,139,0.1);border-radius:8px;padding:12px;text-align:center">
-        <div style="font-size:24px;font-weight:700;color:#94a3b8">${waitingCount}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:4px">等待中</div>
-      </div>
-    </div>
-
-    <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:8px">� BOSS击杀排行</div>
-    <div style="margin-bottom:16px">
-  `;
-
-  // BOSS击杀排行（包含平均击杀时间）
-  for (let i = 0; i < Math.min(bossSorted.length, 10); i++) {
-    const [bossName, stats] = bossSorted[i];
-    const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7f32' : '#64748b';
-    
-    // 计算平均击杀时间
-    let avgKillDelayText = '--';
-    if (stats.killDelays && stats.killDelays.length > 0) {
-      const avgDelay = stats.totalKillDelay / stats.killDelays.length;
-      const minutes = Math.floor(avgDelay / 60000);
-      const seconds = Math.floor((avgDelay % 60000) / 1000);
-      avgKillDelayText = `${minutes}分${seconds}秒`;
-    }
-    
-    html += `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.02);border-radius:6px;margin-bottom:4px">
-        <span style="font-size:14px;font-weight:700;color:${rankColor};width:24px;text-align:center">${i+1}</span>
-        <span style="flex:1;font-size:12px;color:#e2e8f0">${bossName}</span>
-        <span style="font-size:11px;color:#93c5fd;background:rgba(59,130,246,0.15);padding:2px 8px;border-radius:4px">${stats.count}次</span>
-        <span style="font-size:11px;color:#fbbf24;background:rgba(251,191,36,0.15);padding:2px 8px;border-radius:4px" title="从刷新到击杀的平均时间">平均${avgKillDelayText}</span>
-      </div>
-    `;
-  }
-
-  html += `</div>
-    <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:8px">� 最近击杀记录</div>
-    <div style="max-height:200px;overflow-y:auto">
-  `;
-
-  // 最近击杀记录
-  for (let i = 0; i < Math.min(killRecords.length, 20); i++) {
-    const r = killRecords[i];
-    const killDate = new Date(r.killTime);
-    const timeStr = `${(killDate.getMonth()+1).toString().padStart(2,'0')}/${killDate.getDate().toString().padStart(2,'0')} ${killDate.getHours().toString().padStart(2,'0')}:${killDate.getMinutes().toString().padStart(2,'0')}`;
-
-    let statusText, statusColor;
-    if (r.maxRemainMs <= 0) { statusText = '已刷新'; statusColor = '#4ade80'; }
-    else if (r.remainMs <= 0) { statusText = '刷新中'; statusColor = '#fbbf24'; }
-    else if (r.remainMs <= 5 * 60000) { statusText = '即将刷新'; statusColor = '#fb923c'; }
-    else { statusText = '等待中'; statusColor = '#94a3b8'; }
-
-    html += `
-      <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;background:rgba(255,255,255,0.02);border-radius:6px;margin-bottom:3px">
-        <span style="flex:1;font-size:12px;color:#e2e8f0">${r.boss}</span>
-        <span style="font-size:11px;color:#93c5fd;background:rgba(59,130,246,0.15);padding:1px 6px;border-radius:4px">${r.channel}频</span>
-        <span style="font-size:11px;color:#64748b;width:90px;text-align:right">${timeStr}</span>
-        <span style="font-size:11px;color:${statusColor};width:60px;text-align:right">${statusText}</span>
-      </div>
-    `;
-  }
-
+  let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">';
+  html += '<div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:600;color:#3b82f6;">' + stats.totalKills + '</div><div style="font-size:12px;color:#94a3b8;">总击杀</div></div>';
+  html += '<div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:600;color:#10b981;">' + stats.bossCount + '</div><div style="font-size:12px;color:#94a3b8;">BOSS种类</div></div>';
+  html += '<div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:600;color:#f59e0b;">' + stats.avgKillTime + '</div><div style="font-size:12px;color:#94a3b8;">平均击杀时间</div></div>';
   html += '</div>';
-
-  container.innerHTML = finalHtml + html;
+  
+  if (predictedNext) {
+    html += '<div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);padding:12px;border-radius:8px;margin-bottom:16px;">';
+    html += '<div style="font-size:13px;font-weight:600;color:#3b82f6;margin-bottom:4px;">� 下次大刷预测</div>';
+    html += '<div style="font-size:12px;color:#e2e8f0;">' + predictedNext.time + ' (' + predictedNext.confidence + ')</div>';
+    html += '</div>';
+  }
+  
+  // 各BOSS击杀统计
+  html += '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">各BOSS击杀统计</div>';
+  html += '<div style="max-height:200px;overflow-y:auto;">';
+  
+  for (const [name, data] of Object.entries(stats.bossStats)) {
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">';
+    html += '<div>' + name + '</div>';
+    html += '<div style="text-align:right;"><span style="color:#3b82f6;font-weight:600;">' + data.count + '</span> 次 <span style="font-size:11px;color:#94a3b8;">平均: ' + data.avgTime + '</span></div>';
+    html += '</div>';
+  }
+  
+  html += '</div>';
+  
+  document.getElementById('statsContent').innerHTML = html;
 }
-
-
-// 切换下拉面板
 function toggleDropdown(id) {
   const panel = document.getElementById(id);
   const toggle = panel.previousElementSibling;
