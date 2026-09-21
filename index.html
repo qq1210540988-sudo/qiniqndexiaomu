@@ -1688,6 +1688,16 @@ html { width: 100%; overflow-x: hidden; }
     padding: 4px 0;
     border-bottom: 1px solid rgba(255,255,255,0.05);
   }
+
+  .lanmo-time-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .lanmo-time-btn.active {
+    background: rgba(59,130,246,0.2);
+    border-color: rgba(59,130,246,0.5);
+    color: #93c5fd;
+  }
 </style>
 </head>
 <body>
@@ -1791,13 +1801,13 @@ html { width: 100%; overflow-x: hidden; }
     <div class="lanmo-actions">
       <label style="font-size:12px;color:#94a3b8">记录击杀：</label>
       <input type="number" id="lanmoKillChannel" placeholder="频道号" min="1" max="2000">
-      <select id="lanmoKillTime" style="padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:#e2e8f0;font-size:12px">
-        <option value="0">现在</option>
-        <option value="10">10分钟前</option>
-        <option value="30">30分钟前</option>
-        <option value="60">1小时前</option>
-        <option value="custom">自定义时间</option>
-      </select>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-sm lanmo-time-btn active" data-time="0" onclick="selectLanmoTime(this, 0)">现在</button>
+        <button class="btn btn-sm lanmo-time-btn" data-time="10" onclick="selectLanmoTime(this, 10)">10分前</button>
+        <button class="btn btn-sm lanmo-time-btn" data-time="30" onclick="selectLanmoTime(this, 30)">30分前</button>
+        <button class="btn btn-sm lanmo-time-btn" data-time="60" onclick="selectLanmoTime(this, 60)">1小时前</button>
+        <button class="btn btn-sm lanmo-time-btn" data-time="custom" onclick="selectLanmoTime(this, 'custom')">自定义</button>
+      </div>
       <input type="datetime-local" id="lanmoCustomTime" style="display:none;padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:#e2e8f0;font-size:12px">
       <button class="btn btn-success btn-sm" onclick="recordLanmoKill()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg> 记录击杀</button>
       <button class="btn btn-sm" onclick="clearLanmoRecords()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> 清空记录</button>
@@ -4131,18 +4141,17 @@ function recordLanmoKill() {
   }
   
   // 获取击杀时间
-  const timeSelect = document.getElementById('lanmoKillTime');
   const customTimeInput = document.getElementById('lanmoCustomTime');
   let killTime = new Date();
   
-  if (timeSelect.value === 'custom') {
+  if (selectedLanmoTime === 'custom') {
     if (!customTimeInput.value) {
       alert('请选择自定义时间');
       return;
     }
     killTime = new Date(customTimeInput.value);
   } else {
-    const minutesAgo = parseInt(timeSelect.value);
+    const minutesAgo = selectedLanmoTime;
     killTime = new Date(Date.now() - minutesAgo * 60000);
   }
   
@@ -4372,6 +4381,25 @@ function getNextLanmoChannelsFromRecords(records, count = 10) {
 // 初始化蓝蘑菇王追踪
 loadLanmoRecords();
 setInterval(updateLanmoTracker, 1000);
+
+
+// 选择蓝蘑菇王击杀时间
+let selectedLanmoTime = 0;
+function selectLanmoTime(btn, minutes) {
+  selectedLanmoTime = minutes;
+  
+  // 更新按钮样式
+  document.querySelectorAll('.lanmo-time-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  
+  // 显示/隐藏自定义时间输入框
+  const customTimeInput = document.getElementById('lanmoCustomTime');
+  if (minutes === 'custom') {
+    customTimeInput.style.display = 'inline-block';
+  } else {
+    customTimeInput.style.display = 'none';
+  }
+}
 
 function init() {
   updateLanmoTracker();
