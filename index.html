@@ -4340,14 +4340,18 @@ function predictLanmoCurrentChannelFromRecords(records) {
   const speed = calculateLanmoSpeedFromRecords(records);
   const lastRecord = records[records.length - 1];
   const now = new Date();
+  const maxChannel = state.maxChannel || 1000; // 不超过当前最大频道数
   
   if (!speed) {
-    return { channel: lastRecord.channel, speed: null, lastRecord: lastRecord };
+    return { channel: Math.min(lastRecord.channel, maxChannel), speed: null, lastRecord: lastRecord };
   }
   
   const timeDiffMin = (now - lastRecord.time) / 60000;
   const channelsAdvanced = Math.floor(timeDiffMin / speed);
-  const currentChannel = lastRecord.channel + channelsAdvanced;
+  let currentChannel = lastRecord.channel + channelsAdvanced;
+  
+  // 不超过最大频道数
+  currentChannel = Math.min(currentChannel, maxChannel);
   
   return { channel: currentChannel, speed: speed, lastRecord: lastRecord };
 }
