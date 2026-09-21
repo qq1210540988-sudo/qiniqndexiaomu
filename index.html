@@ -4204,8 +4204,27 @@ function getNextLanmoChannels(count = 10) {
 }
 
 function updateLanmoTracker() {
-  const prediction = predictLanmoCurrentChannel();
-  const speed = calculateLanmoSpeed();
+  // 自动从state.kills提取蓝蘑菇王的击杀记录
+  const bossName = '藍色蘑菇王';
+  const autoRecords = [];
+  
+  if (state && state.kills) {
+    for (const [key, timeStr] of Object.entries(state.kills)) {
+      const parsed = parseKillKey(key);
+      if (parsed.bossName === bossName) {
+        const channel = parseInt(parsed.channel);
+        if (channel >= 1) {
+          autoRecords.push({ time: new Date(timeStr), channel: channel });
+        }
+      }
+    }
+  }
+  
+  // 合并手动记录和自动记录
+  const allRecords = [...lanmoRecords, ...autoRecords].sort((a, b) => a.time - b.time);
+  
+  const prediction = predictLanmoCurrentChannelFromRecords(allRecords);
+  const speed = calculateLanmoSpeedFromRecords(allRecords);
   
   // 更新统计
   const currentChannelEl = document.getElementById('lanmoCurrentChannel');
@@ -4226,10 +4245,10 @@ function updateLanmoTracker() {
     speedEl.textContent = '--';
   }
   
-  countEl.textContent = lanmoRecords.length + ' 个';
+  countEl.textContent = allRecords.length + ' 个';
   
   // 更新接下来要刷的频道
-  const nextChannels = getNextLanmoChannels(10);
+  const nextChannels = getNextLanmoChannelsFromRecords(allRecords, 10);
   if (nextChannels.length > 0) {
     let html = '';
     for (const ch of nextChannels) {
@@ -4242,17 +4261,78 @@ function updateLanmoTracker() {
     }
     nextChannelsEl.innerHTML = html;
   } else {
-    nextChannelsEl.innerHTML = '<div style="color:#64748b;font-size:12px">还没有足够数据，请先记录几个击杀点</div>';
+    nextChannelsEl.innerHTML = '<div style="color:#64748b;font-size:12px">还没有足够数据，请先击杀几次藍色蘑菇王</div>';
   }
   
   // 更新历史记录
   let historyHtml = '<div style="color:#64748b;font-size:11px">历史击杀记录：</div>';
-  for (let i = lanmoRecords.length - 1; i >= Math.max(0, lanmoRecords.length - 10); i--) {
-    const r = lanmoRecords[i];
+  for (let i = allRecords.length - 1; i >= Math.max(0, allRecords.length - 10); i--) {
+    const r = allRecords[i];
     const timeStr = r.time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     historyHtml += `<div class="lanmo-history-item">${timeStr} → ${r.channel}频道</div>`;
   }
   historyEl.innerHTML = historyHtml;
+}
+
+// 从指定记录列表计算刷新速度
+function calculateLanmoSpeedFromRecords(records) {
+  if (records.length < 2) return null;
+  
+  const speeds = [];
+  for (let i = 1; i < records.length; i++) {
+    const prev = records[i-1];
+    const curr = records[i];
+    const timeDiff = (curr.time - prev.time) / 60000;
+    const channelDiff = curr.channel - prev.channel;
+    if (channelDiff > 0 && timeDiff > 0) {
+      speeds.push(timeDiff / channelDiff);
+    }
+  }
+  
+  if (speeds.length === 0) return null;
+  return speeds.reduce((a, b) => a + b, 0) / speeds.length;
+}
+
+// 从指定记录列表预测当前频道
+function predictLanmoCurrentChannelFromRecords(records) {
+  if (records.length === 0) return null;
+  
+  const speed = calculateLanmoSpeedFromRecords(records);
+  const lastRecord = records[records.length - 1];
+  const now = new Date();
+  
+  if (!speed) {
+    return { channel: lastRecord.channel, speed: null, lastRecord: lastRecord };
+  }
+  
+  const timeDiffMin = (now - lastRecord.time) / 60000;
+  const channelsAdvanced = Math.floor(timeDiffMin / speed);
+  const currentChannel = lastRecord.channel + channelsAdvanced;
+  
+  return { channel: currentChannel, speed: speed, lastRecord: lastRecord };
+}
+
+// 从指定记录列表获取接下来要刷的频道
+function getNextLanmoChannelsFromRecords(records, count = 10) {
+  const prediction = predictLanmoCurrentChannelFromRecords(records);
+  if (!prediction || !prediction.speed) return [];
+  
+  const now = new Date();
+  const channels = [];
+  
+  for (let i = 0; i < count; i++) {
+    const channel = Math.floor(prediction.channel) + i + 1;
+    const timeUntil = (i + 1) * prediction.speed;
+    const spawnTime = new Date(now.getTime() + timeUntil * 60000);
+    
+    channels.push({
+      channel: channel,
+      time: spawnTime,
+      remainMin: Math.round(timeUntil)
+    });
+  }
+  
+  return channels;
 }
 
 // 初始化蓝蘑菇王追踪
