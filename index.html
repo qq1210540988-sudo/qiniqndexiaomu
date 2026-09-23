@@ -646,7 +646,21 @@ html { width: 100%; overflow-x: hidden; }
       right: 20px;
     }
     .toast { padding: 12px 16px; font-size: 13px; }
-  }
+      
+    /* 蓝蘑菇追踪 - 手机端 */
+    .lanmo-tracker { padding: 14px; margin: 10px 0; border-radius: 12px; }
+    .lanmo-tracker h3 { font-size: 14px; margin-bottom: 12px; }
+    .lanmo-actions { padding: 10px; gap: 8px; }
+    .lanmo-actions input[type="number"] { width: 80px; padding: 8px 10px; font-size: 12px; }
+    .lanmo-history { 
+      grid-template-columns: 1fr 1fr !important; 
+      gap: 4px 8px; 
+      max-height: 160px;
+      font-size: 11px;
+    }
+    .lanmo-history-item { padding: 5px 8px; }
+    .lanmo-time-btn { padding: 5px 10px; font-size: 11px; }
+}
 
   /* BOSS刷新分段 */
   .spawn-segments {
@@ -1574,140 +1588,107 @@ html { width: 100%; overflow-x: hidden; }
 
   /* 蓝蘑菇王追踪面板 */
   .lanmo-tracker {
-    background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(139,92,246,0.1) 100%);
-    border: 1px solid rgba(59,130,246,0.3);
-    border-radius: 14px;
-    padding: 16px;
-    margin-bottom: 14px;
+    background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.05) 100%);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 16px;
+    padding: 18px;
+    margin: 16px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
   }
   .lanmo-tracker h3 {
+    margin: 0 0 16px 0;
     font-size: 16px;
-    font-weight: 700;
-    color: #93c5fd;
-    margin-bottom: 12px;
+    color: #f1f5f9;
     display: flex;
     align-items: center;
-    gap: 8px;
-  }
-  .lanmo-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-  .lanmo-stat-card {
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px;
-    padding: 12px;
-    text-align: center;
-  }
-  .lanmo-stat-label {
-    font-size: 11px;
-    color: #94a3b8;
-    margin-bottom: 4px;
-  }
-  .lanmo-stat-value {
-    font-size: 20px;
+    gap: 10px;
     font-weight: 700;
-    color: #e2e8f0;
   }
-  .lanmo-stat-value.highlight {
-    color: #10b981;
-  }
-  .lanmo-next-channels {
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-  .lanmo-next-channels h4 {
-    font-size: 13px;
-    font-weight: 600;
-    color: #93c5fd;
-    margin-bottom: 8px;
-  }
-  .lanmo-channel-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .lanmo-channel-item {
-    background: rgba(34,197,94,0.15);
-    border: 1px solid rgba(34,197,94,0.3);
-    border-radius: 8px;
-    padding: 8px 12px;
-    text-align: center;
-    min-width: 70px;
-  }
-  .lanmo-channel-item .channel {
-    font-size: 14px;
-    font-weight: 700;
-    color: #86efac;
-  }
-  .lanmo-channel-item .time {
-    font-size: 10px;
-    color: #94a3b8;
-    margin-top: 2px;
-  }
-  .lanmo-channel-item.soon {
-    background: rgba(245,158,11,0.15);
-    border-color: rgba(245,158,11,0.3);
-  }
-  .lanmo-channel-item.soon .channel {
-    color: #fcd34d;
+  .lanmo-tracker h3::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+    border-radius: 2px;
   }
   .lanmo-actions {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 10px;
     align-items: center;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
   }
-  .lanmo-actions input {
-    padding: 7px 10px;
+  .lanmo-actions label {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+  .lanmo-actions input[type="number"] {
+    padding: 8px 12px;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.1);
     background: rgba(0,0,0,0.3);
     color: #e2e8f0;
-    font-size: 12px;
-    width: 80px;
-    outline: none;
+    font-size: 13px;
+    width: 100px;
   }
-  .lanmo-actions input:focus {
+  .lanmo-actions input[type="number"]:focus {
+    outline: none;
     border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
   }
   .lanmo-history {
     margin-top: 12px;
-    max-height: 180px;
+    max-height: 200px;
     overflow-y: auto;
-    font-size: 11px;
+    font-size: 12px;
     color: #94a3b8;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 4px 8px;
+    gap: 6px 10px;
   }
   .lanmo-history-item {
-    padding: 4px 6px;
-    background: rgba(255,255,255,0.03);
-    border-radius: 4px;
-    border-bottom: none;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    border-left: 3px solid #3b82f6;
+    transition: all 0.2s;
+  }
+  .lanmo-history-item:hover {
+    background: rgba(59,130,246,0.1);
+    border-left-color: #60a5fa;
   }
   .lanmo-history .history-header {
     grid-column: 1 / -1;
     padding: 0;
     background: none;
+    border-left: none;
     margin-bottom: 4px;
+    font-weight: 600;
+    color: #64748b;
   }
-
   .lanmo-time-btn {
-    padding: 4px 8px;
-    font-size: 11px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .lanmo-time-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #e2e8f0;
   }
   .lanmo-time-btn.active {
-    background: rgba(59,130,246,0.2);
-    border-color: rgba(59,130,246,0.5);
-    color: #93c5fd;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-color: transparent;
+    color: white;
+    font-weight: 600;
   }
 </style>
 </head>
