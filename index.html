@@ -2898,6 +2898,10 @@ function renderBosses() {
   // 判断是手机端还是桌面端
   const isMobile = window.innerWidth <= 768;
   if (isMobile) {
+    const cardsContainer = document.getElementById('bossCardsContainer');
+    const tableContainer = document.querySelector('.boss-table-container');
+    if (cardsContainer) cardsContainer.style.display = '';
+    if (tableContainer) tableContainer.style.display = 'none';
     renderBossCards();
     return;
   }
@@ -4502,6 +4506,7 @@ init();
 
 </body>
 </html>
+
 
 
 
