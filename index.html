@@ -1679,14 +1679,25 @@ html { width: 100%; overflow-x: hidden; }
   }
   .lanmo-history {
     margin-top: 12px;
-    max-height: 120px;
+    max-height: 180px;
     overflow-y: auto;
     font-size: 11px;
     color: #94a3b8;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 8px;
   }
   .lanmo-history-item {
-    padding: 4px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 4px 6px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    border-bottom: none;
+  }
+  .lanmo-history .history-header {
+    grid-column: 1 / -1;
+    padding: 0;
+    background: none;
+    margin-bottom: 4px;
   }
 
   .lanmo-time-btn {
@@ -3666,8 +3677,22 @@ function openStatsModal() {
 
 // 渲染统计内容
 function getKillRecords() {
-  if (!state.killRecords) state.killRecords = [];
-  return state.killRecords;
+  // 从state.kills读取击杀记录
+  const records = [];
+  if (state.kills) {
+    for (const [key, timeStr] of Object.entries(state.kills)) {
+      const parsed = parseKillKey(key);
+      if (parsed.bossName && parsed.channel) {
+        records.push({
+          bossName: parsed.bossName,
+          channel: parseInt(parsed.channel),
+          time: new Date(timeStr),
+          map: parsed.map
+        });
+      }
+    }
+  }
+  return records;
 }
 
 function getKillStats() {
@@ -3708,10 +3733,9 @@ function renderStats() {
   const stats = getKillStats();
   const predictedNext = predictNextBigSpawn();
   
-  let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">';
+  let html = '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;">';
   html += '<div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:600;color:#3b82f6;">' + stats.totalKills + '</div><div style="font-size:12px;color:#94a3b8;">总击杀</div></div>';
-  html += '<div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:600;color:#10b981;">' + stats.bossCount + '</div><div style="font-size:12px;color:#94a3b8;">BOSS种类</div></div>';
-  html += '<div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:600;color:#f59e0b;">' + stats.avgKillTime + '</div><div style="font-size:12px;color:#94a3b8;">平均击杀时间</div></div>';
+  html += '<div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:600;color:#f59e0b;">' + stats.bossCount + '</div><div style="font-size:12px;color:#94a3b8;">BOSS种类</div></div>';
   html += '</div>';
   
   if (predictedNext) {
@@ -4315,7 +4339,7 @@ function updateLanmoTracker() {
   const historyEl = document.getElementById('lanmoHistory');
   if (!historyEl) return;
   
-  let historyHtml = '<div style="color:#64748b;font-size:11px;margin-bottom:4px">历史击杀记录（共' + allRecords.length + '条）：</div>';
+  let historyHtml = '<div class="history-header" style="color:#64748b;font-size:11px;margin-bottom:4px">历史击杀记录（共' + allRecords.length + '条）：</div>';
   for (let i = allRecords.length - 1; i >= 0; i--) {
     const r = allRecords[i];
     const timeStr = r.time.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
