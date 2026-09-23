@@ -3300,10 +3300,20 @@ function closeModal(id) {
 // 导入导出
 // ============================================================
 function exportConfig() {
-  const data = JSON.stringify(state);
+  const exportData = {
+    t: state.serverOpenTime,
+    c: state.maxChannel,
+    r: state.referencePoints,
+    k: state.kills,
+    p: state.autoResetPercent,
+    h: state.hiddenBosses,
+    b: state.bigSpawnRecords || [],
+    l: state.lanmoRecords || []
+  };
+  const data = JSON.stringify(exportData);
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(data).then(() => {
-      showToast('�', '已复制', '配置已复制到剪贴板，可粘贴分享或备份');
+      showToast('�', '已复制', '配置已复制（' + (data.length/1024).toFixed(1) + 'KB）');
     }).catch(() => {
       fallbackCopy(data);
     });
@@ -3336,16 +3346,25 @@ function confirmImport() {
   }
   try {
     const data = JSON.parse(text);
-    state = { ...state, ...data };
-    if (!state.kills) state.kills = {};
+    // 兼容新旧格式：新格式用短key，旧格式用长key
+    state.serverOpenTime = data.t || data.serverOpenTime || state.serverOpenTime;
+    state.maxChannel = data.c || data.maxChannel || state.maxChannel;
+    state.referencePoints = data.r || data.referencePoints || [];
+    state.kills = data.k || data.kills || {};
+    state.autoResetPercent = data.p || data.autoResetPercent || 20;
+    state.hiddenBosses = data.h || data.hiddenBosses || [];
+    state.bigSpawnRecords = data.b || data.bigSpawnRecords || [];
+    state.lanmoRecords = data.l || data.lanmoRecords || [];
     if (!state.bossOverrides) state.bossOverrides = {};
     if (!state.notified) state.notified = {};
     saveState();
     renderSettings();
     renderBosses();
     renderKillLog();
+    updateLanmoTracker();
     
     closeDropdown('importDropdown');
+    closeModal('importModal');
     showToast('�', '导入成功', '配置已加载（包含击杀记录）');
   } catch(err) {
     showToast('❌', '导入失败', '配置文本格式错误');
@@ -4505,6 +4524,8 @@ init();
 
 </body>
 </html>
+
+
 
 
 
