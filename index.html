@@ -1729,13 +1729,13 @@ html { width: 100%; overflow-x: hidden; }
   <!-- 设置栏 - 可折叠 -->
   <!-- 设置栏 -->
   <div class="stats-module" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px;margin:12px 0;">
-  <div style="font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:12px;display:flex;align-items:center;gap:8px;">� BOSS击杀统计</div>
+  <div style="font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:12px;display:flex;align-items:center;gap:8px;">📊 BOSS击杀统计</div>
   <div id="statsContent" style="max-height:400px;overflow-y:auto"></div>
 </div>
 
 <div class="settings-bar">
     <div class="settings-group">
-      <label>� 服务器开服时间 <span class="today-tag" id="openDateTag">今天</span></label>
+      <label>🕐 服务器开服时间 <span class="today-tag" id="openDateTag">今天</span></label>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <select id="openDateSelect" style="width:80px;padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);color:#e2e8f0;font-size:12px">
           <option value="0">今天</option>
@@ -1748,7 +1748,7 @@ html { width: 100%; overflow-x: hidden; }
       <div class="hint">频道1的开服时刻（自动作为第1个参考点）</div>
     </div>
     <div class="settings-group ref-points-group" style="flex:2;min-width:280px">
-      <label>� 参考点</label>
+      <label>📊 参考点</label>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <input type="time" id="newRefTime" value="" style="width:100px">
         <span style="color:#64748b;font-size:12px">开到</span>
@@ -1757,7 +1757,7 @@ html { width: 100%; overflow-x: hidden; }
         <button class="btn btn-sm btn-primary" onclick="addReferencePoint()">➕</button>
         <button class="btn btn-sm" onclick="setNowTime('newRefTime')" title="设为当前时间">现在</button>
         <button class="btn btn-sm ref-view-btn" onclick="toggleRefPoints()" title="查看参考点">
-          � <span id="refCount">0</span> <span class="ref-arrow">▼</span>
+          📈 <span id="refCount">0</span> <span class="ref-arrow">▼</span>
         </button>
       </div>
       <div id="refPointsContent" class="ref-points-content hidden">
@@ -1766,7 +1766,7 @@ html { width: 100%; overflow-x: hidden; }
       </div>
     </div>
     <div class="settings-group">
-      <label>� 当前已开频道数</label>
+      <label>📺 当前已开频道数</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="number" id="maxChannel" placeholder="840" value="" min="1" style="width:100px" oninput="onMaxChannelChange(this.value)">
         
@@ -1774,7 +1774,7 @@ html { width: 100%; overflow-x: hidden; }
 
   <!-- 蓝蘑菇王追踪面板 -->
   <div class="lanmo-tracker" id="lanmoTracker">
-    <h3>� 藍色蘑菇王 智能追踪</h3>
+    <h3>🍄 藍色蘑菇王 智能追踪</h3>
     <div class="lanmo-actions">
       <label style="font-size:12px;color:#94a3b8">记录击杀：</label>
       <input type="number" id="lanmoKillChannel" placeholder="频道号" min="1" max="2000">
@@ -1798,7 +1798,7 @@ html { width: 100%; overflow-x: hidden; }
       <div class="hint">目前游戏已开到的最大频道号</div>
     </div>
     <div class="settings-group">
-      <label>� 自动重置百分比</label>
+      <label>🔄 自动重置百分比</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input type="number" id="autoResetPercent" placeholder="20" value="20" min="0" max="200" style="width:80px">
         <span style="color:#64748b;font-size:12px">%</span>
@@ -1856,7 +1856,7 @@ html { width: 100%; overflow-x: hidden; }
 
   <!-- 空状态 -->
   <div id="emptyState" class="empty-state hidden">
-    <div class="icon">�</div>
+    <div class="icon">🎮</div>
     <h3>请先设置开服信息</h3>
     <p>在上方填写服务器开服时间和已开频道数，即可开始追踪 BOSS 刷新</p>
   </div>
@@ -2103,9 +2103,9 @@ function getSpawnProbabilityBarHtml(prob) {
   
   let html = '<div style="margin-top:8px">';
   html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;margin-bottom:4px">';
-  html += '<span>� 刷新分布</span>';
+  html += '<span>📊 刷新分布</span>';
   if (prob.bestChannel > 0) {
-    html += '<span style="color:#fbbf24">� 推荐: ' + prob.bestChannel + '频 (' + (prob.bestProbability * 100).toFixed(0) + '%)</span>';
+    html += '<span style="color:#fbbf24">🎯 推荐: ' + prob.bestChannel + '频 (' + (prob.bestProbability * 100).toFixed(0) + '%)</span>';
   }
   html += '</div>';
   
@@ -2509,8 +2509,8 @@ function renderReferencePointsList() {
       <div class="ref-point-item ${isOpen ? 'ref-open' : ''}">
         <div class="ref-point-main">
           ${openBadge}
-          <span class="ref-channel">� ${p.channel}频道</span>
-          <span class="ref-time">� ${timeStr}</span>
+          <span class="ref-channel">📺 ${p.channel}频道</span>
+          <span class="ref-time">🕐 ${timeStr}</span>
         </div>
         <div class="ref-point-side">
           ${rateText}
@@ -2585,7 +2585,7 @@ function removeReferencePoint(index) {
   const p = state.referencePoints[index];
   state.referencePoints.splice(index, 1);
   renderReferencePointsList();
-  showToast('�️', '已删除', `${p.channel}频道参考点已删除`);
+  showToast('🗑️', '已删除', `${p.channel}频道参考点已删除`);
   updateSettingsSummary();
   updateRefCount();
 }
@@ -2626,7 +2626,7 @@ function saveSettings() {
     state.referencePoints = [];
     state.maxChannel = n1;
     document.getElementById('maxChannel').value = n1;
-    showToast('�', '开服时间已更新', '参考点和频道数已重置，请重新设置');
+    showToast('🔄', '开服时间已更新', '参考点和频道数已重置，请重新设置');
   } else {
     // 开服时间未改变，保持原有逻辑
     state.serverOpenTime = openTime;
@@ -2794,7 +2794,7 @@ function renderHiddenBossList() {
     const boss = BOSS_DATA.find(b => b.name === name);
     const iconHtml = boss && boss.iconUrl
       ? `<div class="hbc-icon" style="display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;">${name.charAt(0)}</div>`
-      : `<span class="hbc-icon-fallback">�</span>`;
+      : `<span class="hbc-icon-fallback">👾</span>`;
     const levelText = boss ? `Lv.${boss.level}` : '';
     return `<div class="hidden-boss-card">
       ${iconHtml}
@@ -3294,7 +3294,7 @@ function exportConfig() {
   const data = JSON.stringify(exportData);
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(data).then(() => {
-      showToast('�', '已复制', '配置已复制（' + (data.length/1024).toFixed(1) + 'KB）');
+      showToast('📋', '已复制', '配置已复制（' + (data.length/1024).toFixed(1) + 'KB）');
     }).catch(() => {
       fallbackCopy(data);
     });
@@ -3309,7 +3309,7 @@ function fallbackCopy(text) {
   ta.style.opacity = '0';
   document.body.appendChild(ta);
   ta.select();
-  try { document.execCommand('copy'); showToast('�', '已复制', '配置已复制到剪贴板'); }
+  try { document.execCommand('copy'); showToast('📋', '已复制', '配置已复制到剪贴板'); }
   catch(e) { showToast('❌', '复制失败', '请手动复制'); }
   document.body.removeChild(ta);
 }
@@ -3346,7 +3346,7 @@ function confirmImport() {
     
     closeDropdown('importDropdown');
     closeModal('importModal');
-    showToast('�', '导入成功', '配置已加载（包含击杀记录）');
+    showToast('📥', '导入成功', '配置已加载（包含击杀记录）');
   } catch(err) {
     showToast('❌', '导入失败', '配置文本格式错误');
   }
@@ -3360,7 +3360,7 @@ function clearAllData() {
   renderBosses();
   renderKillLog();
   
-  showToast('�️', '已清空', '所有击杀记录已清除，配置已保留');
+  showToast('🗑️', '已清空', '所有击杀记录已清除，配置已保留');
 }
 
 // ============================================================
@@ -3422,7 +3422,7 @@ function renderKillLog() {
 
     const iconHtml = e.bossBase && e.bossBase.iconUrl
       ? `<div class="kl-icon" style="display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;">${e.bossName.charAt(0)}</div>`
-      : `<span class="kl-icon-fallback">�</span>`;
+      : `<span class="kl-icon-fallback">👾</span>`;
 
     const encodedKey = encodeURIComponent(e.key);
     return `
@@ -3431,8 +3431,8 @@ function renderKillLog() {
         <div class="kl-info">
           <div class="kl-top">
             <span class="kl-boss-name">${e.bossName}</span>
-            <span class="kl-channel-badge">� ${e.ch}频道</span>
-            ${e.map ? `<span class="kl-map-badge">�️ ${e.map}</span>` : ''}
+            <span class="kl-channel-badge">📺 ${e.ch}频道</span>
+            ${e.map ? `<span class="kl-map-badge">🗺️ ${e.map}</span>` : ''}
           </div>
           <div class="kl-meta">
             <span>⚔️ ${formatTime(e.killTime)}</span>
@@ -3458,7 +3458,7 @@ function removeKill(key) {
     
     renderBosses();
     renderKillLog();
-    showToast('�️', '已删除', '击杀记录已删除');
+    showToast('🗑️', '已删除', '击杀记录已删除');
   }
 }
 
@@ -3475,7 +3475,7 @@ function deleteKillRecord(encodedKey) {
   saveState();
   renderBosses();
   renderKillLog();
-  showToast('�️', '已删除', `${bossName} - 频道 ${ch} 记录已删除`);
+  showToast('🗑️', '已删除', `${bossName} - 频道 ${ch} 记录已删除`);
 }
 
 function clearKillLog() {
@@ -3485,7 +3485,7 @@ function clearKillLog() {
   saveState();
   renderBosses();
   renderKillLog();
-  showToast('�️', '已清空', '击杀记录已清除');
+  showToast('🗑️', '已清空', '击杀记录已清除');
 }
 
 // ============================================================
@@ -3551,7 +3551,7 @@ function toggleChaseMode() {
     btn.textContent = chaseMode ? '追杀模式中' : '追杀模式';
   }
   if (chaseMode) {
-    showToast('�', '追杀模式', '已击杀频道按刷新顺序排列，黄色闪烁为下一个目标');
+    showToast('🎯', '追杀模式', '已击杀频道按刷新顺序排列，黄色闪烁为下一个目标');
   }
   // 重新渲染频道网格
   if (currentKillBoss) {
@@ -3624,7 +3624,7 @@ function checkBigSpawn() {
         bosses: [...new Set(recentKills.map(k => parseKillKey(k.key).bossName))]
       });
       saveState();
-      showToast('�', '大刷检测', `检测到10分钟内击杀${recentKills.length}个BOSS，已记录大刷时间点`);
+      showToast('🔥', '大刷检测', `检测到10分钟内击杀${recentKills.length}个BOSS，已记录大刷时间点`);
     }
   }
 }
@@ -3716,7 +3716,7 @@ function renderStats() {
   
   if (predictedNext) {
     html += '<div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);padding:12px;border-radius:8px;margin-bottom:16px;">';
-    html += '<div style="font-size:13px;font-weight:600;color:#3b82f6;margin-bottom:4px;">� 下次大刷预测</div>';
+    html += '<div style="font-size:13px;font-weight:600;color:#3b82f6;margin-bottom:4px;">🔮 下次大刷预测</div>';
     html += '<div style="font-size:12px;color:#e2e8f0;">' + predictedNext.time + ' (' + predictedNext.confidence + ')</div>';
     html += '</div>';
   }
@@ -3903,36 +3903,42 @@ function openChannelModal(bossName) {
           const nextMax = new Date(killTime.getTime() + bossDef.maxRebirth * 60000);
           const now = new Date();
           
-          // 计算进度
+          // 计算进度和显示文本
           const totalRange = nextMax - nextMin;
           let progress = 0;
           let phase = 'green';
+          let statusText = '';
           
           if (now < nextMin) {
-            // 还没到最低刷新时间，绿色
+            // 还没到最低刷新时间，显示剩余时间
+            const remainMs = nextMin - now;
+            const remainMin = Math.floor(remainMs / 60000);
+            const remainSec = Math.floor((remainMs % 60000) / 1000);
+            statusText = '剩' + remainMin + '分' + remainSec + '秒';
             const preRange = nextMin - killTime;
             progress = Math.min(100, ((now - killTime) / preRange) * 100);
             phase = 'green';
           } else if (now < nextMax) {
-            // 在最低和最大之间，从绿变红
+            // 已刷新，在最低和最大之间，显示已刷新多久
+            const spawnedMs = now - nextMin;
+            const spawnedMin = Math.floor(spawnedMs / 60000);
+            statusText = '已刷新' + spawnedMin + '分';
             progress = Math.min(100, ((now - nextMin) / totalRange) * 100);
             if (progress < 33) phase = 'yellow';
             else if (progress < 66) phase = 'orange';
             else phase = 'red';
           } else {
-            // 超过最大刷新时间，紫色
+            // 超过最大刷新时间
+            const spawnedMs = now - nextMin;
+            const spawnedMin = Math.floor(spawnedMs / 60000);
+            statusText = '已刷新' + spawnedMin + '分';
             progress = 100;
             phase = 'purple';
           }
           
-          const nextTimeText = `${formatTime(nextMin)}~${formatTime(nextMax)}`;
+          const color = phase === 'green' ? '#10b981' : phase === 'yellow' ? '#f59e0b' : phase === 'orange' ? '#f97316' : phase === 'red' ? '#ef4444' : '#8b5cf6';
           btn.classList.add('killed', 'phase-' + phase);
-          btn.innerHTML = `<div class="btn-channel-num">${channel}</div><div class="progress-bar"><div class="progress-fill" style="width:${progress}%;background:${
-            phase === 'green' ? '#10b981' :
-            phase === 'yellow' ? '#f59e0b' :
-            phase === 'orange' ? '#f97316' :
-            phase === 'red' ? '#ef4444' : '#8b5cf6'
-          }"></div></div>`;
+          btn.innerHTML = '<div class="btn-channel-num">' + channel + '</div><div class="btn-status-text" style="font-size:10px;color:' + color + ';margin:2px 0">' + statusText + '</div><div class="progress-bar"><div class="progress-fill" style="width:' + progress + '%;background:' + color + '"></div></div>';
         }
       }
     }
